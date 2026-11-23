@@ -352,9 +352,9 @@ function showTab(t){
   try{sessionStorage.setItem(KEY+'-tab',t)}catch(e){}
   render();
 }
-let showAlt=false;try{showAlt=localStorage.getItem(KEY+'-alt')==='1'}catch(e){}
+let showAlt=true;try{showAlt=localStorage.getItem(KEY+'-alt2')!=='0'}catch(e){}
 $('showAlt').checked=showAlt;
-$('showAlt').onchange=e=>{showAlt=e.target.checked;try{localStorage.setItem(KEY+'-alt',showAlt?'1':'0')}catch(_){};render()};
+$('showAlt').onchange=e=>{showAlt=e.target.checked;try{localStorage.setItem(KEY+'-alt2',showAlt?'1':'0')}catch(_){};render()};
 
 /* ---------- formulario ---------- */
 const opts=(first)=>`<option value="">${first}</option>`+Object.entries(POS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
