@@ -4,7 +4,7 @@ App del plantel: cada jugador carga su posición ideal y dos alternativas, si es
 
 ## Puesta en marcha
 1. **Supabase:** crear un proyecto, abrir *SQL Editor*, pegar `supabase/schema.sql` y ejecutar.
-2. En *Project Settings → API* copiar la **Project URL** y la **anon public key**, y pegarlas en `index.html` (`SUPABASE_URL` y `SUPABASE_ANON_KEY`).
+2. En *Project Settings → API* copiar la **Project URL** y la **publishable key** (o la anon key en Legacy API Keys), y pegarlas en `index.html` (`SUPABASE_URL` y `SUPABASE_ANON_KEY`).
 3. **GitHub Pages:** *Settings → Pages → Deploy from a branch → main / root*. Queda en `https://gcovetta.github.io/martona-one/`.
 
 Sin las claves de Supabase, la app funciona igual pero guarda solo en el navegador de cada uno.
