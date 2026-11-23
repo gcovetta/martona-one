@@ -150,6 +150,7 @@ td.names .a{color:var(--muted)}
 .sync{display:block;font:600 .72rem var(--body);font-style:normal;letter-spacing:.02em;text-transform:none;color:var(--muted);margin-top:6px}
 .sync.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
 .sync.off::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--alt);margin-right:6px;vertical-align:1px}
+.nick{color:var(--gold);font-weight:600;font-style:italic}
 </style>
 
 <div class="wrap">
@@ -229,6 +230,7 @@ td.names .a{color:var(--muted)}
           <label for="f-name">Nombre<input id="f-name" required maxlength="40" placeholder="Ej: Juan Pérez"></label>
           <label for="f-num">Número<input id="f-num" type="number" min="1" max="99" inputmode="numeric" placeholder="10"></label>
         </div>
+        <label for="f-nick">Apodo (opcional)<input id="f-nick" maxlength="24" placeholder="Ej: el Flaco"></label>
         <div class="row3">
           <label for="f-ideal">Posición ideal<select id="f-ideal"></select></label>
           <label for="f-alt1">2ª opción<select id="f-alt1"></select></label>
@@ -293,9 +295,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---------- Supabase ---------- */
 const sb=(SUPABASE_URL&&SUPABASE_ANON_KEY&&window.supabase)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 function setSync(cls,txt){const el=$('sync');if(!el)return;el.className='sync '+cls;el.textContent=txt}
-const toRow=p=>({id:p.id,name:p.name,num:p.num||null,ideal:p.ideal||null,alt1:p.alt1||null,alt2:p.alt2||null,photo:p.photo||null,
+const toRow=p=>({id:p.id,name:p.name,nick:p.nick||null,num:p.num||null,ideal:p.ideal||null,alt1:p.alt1||null,alt2:p.alt2||null,photo:p.photo||null,
   inj:!!p.inj,inj_weeks:p.injWeeks||null,inj_since:p.injSince?new Date(p.injSince).toISOString():null});
-const fromRow=r=>({id:r.id,name:r.name,num:r.num||'',ideal:r.ideal||'',alt1:r.alt1||'',alt2:r.alt2||'',photo:r.photo||'',
+const fromRow=r=>({id:r.id,name:r.name,nick:r.nick||'',num:r.num||'',ideal:r.ideal||'',alt1:r.alt1||'',alt2:r.alt2||'',photo:r.photo||'',
   inj:!!r.inj,injWeeks:r.inj_weeks||0,injSince:r.inj_since?Date.parse(r.inj_since):0});
 async function pull(){
   if(!sb){setSync('off','Guardado solo en este dispositivo');return}
@@ -305,7 +307,8 @@ async function pull(){
 }
 async function pushPlayer(p){
   save();if(!sb)return;
-  const {error}=await sb.from('jugadores').upsert(toRow(p));
+  let {error}=await sb.from('jugadores').upsert(toRow(p));
+  if(error&&/nick/.test(error.message)){const row=toRow(p);delete row.nick;({error}=await sb.from('jugadores').upsert(row));}
   if(error){setSync('off','No se pudo guardar en línea: '+error.message)}else setSync('on','Sincronizado con el equipo');
 }
 async function removePlayer(id){
@@ -336,7 +339,8 @@ function avatar(p,f){
   const bg=p.photo?'':`background:hsl(${hue(p.name)} 38% 36%)`;
   return `<span class="av${p.inj?' hurt':''}" style="--ring:${ringVar[f||'']};${bg}">${inner}${p.inj?'<span class="inj" title="Lesionado"></span>':''}${weeksLeft(p)!==null?`<span class="injw" title="Semanas para recuperarse">${weeksLeft(p)}S</span>`:''}${p.num?`<span class="num">${esc(p.num)}</span>`:''}</span>`;
 }
-const face=(p,f)=>`<button type="button" class="face ${f}" data-id="${p.id}" title="${esc(p.name)}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(p.name)}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
+const dn=p=>p.nick?`${p.name} “${p.nick}”`:p.name;
+const face=(p,f)=>`<button type="button" class="face ${f}" data-id="${p.id}" title="${esc(dn(p))}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
 const sorted=()=>[...S.players].sort((a,b)=>a.name.localeCompare(b.name,'es'));
 function stat(n,need){return n<need?['bad',`Faltan ${need-n}`]:(n>need+1?['alt',`Sobran ${n-need}`]:['ok','Cubierto'])}
 
@@ -380,7 +384,7 @@ function edit(id){
   const p=byId(id);if(!p)return;
   if($('v-plantel').hidden)showTab('plantel');
   editing=id;photoData=p.photo||'';delArmed=false;
-  $('f-name').value=p.name;$('f-num').value=p.num||'';$('f-ideal').value=p.ideal;$('f-alt1').value=p.alt1||'';$('f-alt2').value=p.alt2||'';$('f-inj').checked=!!p.inj;$('f-weeks').value=weeksLeft(p)??'';syncInj();
+  $('f-name').value=p.name;$('f-nick').value=p.nick||'';$('f-num').value=p.num||'';$('f-ideal').value=p.ideal;$('f-alt1').value=p.alt1||'';$('f-alt2').value=p.alt2||'';$('f-inj').checked=!!p.inj;$('f-weeks').value=weeksLeft(p)??'';syncInj();
   $('formTitle').textContent='Editar jugador';$('f-save').textContent='Guardar cambios';
   $('f-cancel').hidden=false;$('f-del').hidden=false;$('f-del').textContent='Borrar';$('f-err').hidden=true;prev();
   $('form').scrollIntoView({behavior:'smooth',block:'start'});
@@ -392,7 +396,7 @@ $('f-del').onclick=()=>{
 };
 $('form').onsubmit=e=>{
   e.preventDefault();
-  const name=$('f-name').value.trim(),num=parseInt($('f-num').value,10)||'',ideal=$('f-ideal').value,alt1=$('f-alt1').value,alt2=$('f-alt2').value;
+  const name=$('f-name').value.trim(),nick=$('f-nick').value.trim(),num=parseInt($('f-num').value,10)||'',ideal=$('f-ideal').value,alt1=$('f-alt1').value,alt2=$('f-alt2').value;
   const err=m=>{$('f-err').textContent=m;$('f-err').hidden=false};
   if(!name)return err('Falta el nombre.');
   if(ideal&&(alt1===ideal||alt2===ideal))return err('Las opciones 2 y 3 tienen que ser distintas de la ideal.');
@@ -402,7 +406,7 @@ $('form').onsubmit=e=>{
   const old=editing?byId(editing):null;
   let injWeeks=0,injSince=0;
   if(inj&&wk){ if(old&&old.inj&&weeksLeft(old)===wk){injWeeks=old.injWeeks;injSince=old.injSince}else{injWeeks=wk;injSince=Date.now()} }
-  const data={name,num,ideal,alt1,alt2,photo:photoData,inj,injWeeks,injSince};
+  const data={name,nick,num,ideal,alt1,alt2,photo:photoData,inj,injWeeks,injSince};
   let p;
   if(editing){p=byId(editing);Object.assign(p,data)}
   else{p={id:'p'+Date.now().toString(36),...data};S.players.push(p)}
@@ -455,7 +459,7 @@ function renderCancha(C){
 /* ---------- tabla ---------- */
 function renderTabla(C){
   const groups=[...LINES,['DT','Cuerpo técnico']];
-  const lab=p=>esc(p.name)+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
+  const lab=p=>esc(dn(p))+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
   const nm=k=>C.idealP[k].map(lab).concat(C.altP[k].map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
   const num=(n,need)=>`<span class="st ${stat(n,need)[0]}">${n}</span>`;
   let h='<thead><tr><th>Posición</th><th class="n">Ideal</th><th class="n">Alt.</th><th class="n">Nec.</th></tr></thead><tbody>';
@@ -476,7 +480,7 @@ function renderPlantel(){
   const loaded=S.players.filter(p=>p.ideal).length;
   $('pend').textContent=loaded<S.players.length?'Tocá un nombre para cargar su posición':'';
   $('list').innerHTML=sorted().length?sorted().map(p=>`<button type="button" class="pl" data-id="${p.id}">${avatar(p,p.ideal?'ok':'')}
-    <span class="info"><span class="nm">${esc(p.name)}${p.ideal?'':'<span class="tag">falta posición</span>'}${p.inj?`<span class="tag inj-t">${injTxt(p)}</span>`:''}</span>
+    <span class="info"><span class="nm">${esc(p.name)}${p.nick?`<span class="nick">“${esc(p.nick)}”</span>`:''}${p.ideal?'':'<span class="tag">falta posición</span>'}${p.inj?`<span class="tag inj-t">${injTxt(p)}</span>`:''}</span>
     <span class="ps">${p.ideal?`<b>${POS[p.ideal].n}</b>${p.alt1?' · '+POS[p.alt1].n:''}${p.alt2?' · '+POS[p.alt2].n:''}`:(p.alt1||p.alt2?'Sin ideal · '+[p.alt1,p.alt2].filter(Boolean).map(c=>POS[c].n).join(' · '):'Sin cargar')}</span></span></button>`).join('')
     :'<p class="empty">Todavía no hay jugadores. Sumá el primero con el formulario.</p>';
 }

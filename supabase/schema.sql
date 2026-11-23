@@ -56,3 +56,6 @@ insert into public.jugadores (id, name, num, ideal, alt1, alt2) values
   ('p14','Fernando Areán',null,null,null,null),
   ('p15','Ger Mansilla',null,null,null,null)
 on conflict (id) do nothing;
+
+-- Apodo (agregado después)
+alter table public.jugadores add column if not exists nick text;
