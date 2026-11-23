@@ -282,13 +282,13 @@ const POS = {
   DLD:{ab:'DLD',s:'Del. der.',n:'Delantero por derecha',l:'ATA'},
   DT:{ab:'DT',s:'DT',n:'DT (director técnico)',l:'DT',need:1}
 };
-const BACK4=[['ARQ',50,89],['DFI',12,64],['DFC',33,74],['DFC',67,74],['DFD',88,64]];
+const BACK4=[['ARQ',50,89],['DFI',12,64],['DFC',33,74,'DCI','DCI'],['DFC',67,74,'DCD','DCD'],['DFD',88,64]];
 const FORMS={
   '442':{n:'4-4-2',s:[...BACK4,['MI',13,43],['MC',35,50],['MC',65,50],['MD',87,43],['DLI',33,17],['DLD',67,17]]},
   '433':{n:'4-3-3',s:[...BACK4,['MI',22,47],['MC',50,52],['MD',78,47],['DLI',16,21],['DCN',50,15],['DLD',84,21]]},
   '4231':{n:'4-2-3-1',s:[...BACK4,['MC',30,56],['MC',70,56],['MI',14,33],['ENG',50,35],['MD',86,33],['DCN',50,13]]},
   '4312':{n:'4-3-1-2 (con enganche)',s:[...BACK4,['MI',16,50],['MC',50,54],['MD',84,50],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
-  '352':{n:'3-5-2',s:[['ARQ',50,89],['DFC',22,72],['DFC',50,75],['DFC',78,72],['MI',12,47],['MC',35,54],['MC',65,54],['MD',88,47],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
+  '352':{n:'3-5-2',s:[['ARQ',50,89],['DFC',22,72,'DCI','DCI'],['DFC',50,75,'DC','DC'],['DFC',78,72,'DCD','DCD'],['MI',12,47],['MC',35,54],['MC',65,54],['MD',88,47],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
   '451':{n:'4-5-1',s:[...BACK4,['MI',12,42],['MC',31,50],['ENG',50,38],['MC',69,50],['MD',88,42],['DCN',50,14]]}
 };
 let FORM='442';try{const v=localStorage.getItem('martona40-form');if(v&&FORMS[v])FORM=v}catch(e){}
@@ -448,7 +448,7 @@ function counts(){
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
   const slots=FORMS[FORM].s;
-  slots.forEach(([k,x,y],si)=>{
+  slots.forEach(([k,x,y,hab,hs],si)=>{
     const v=POS[k],same=slots.map((t,i)=>t[0]===k?i:-1).filter(i=>i>=0),idx=same.indexOf(si),n=same.length;
     const mine=arr=>arr.filter((_,i)=>i%n===idx);
     const ip=mine(C.idealP[k]),ap=showAlt?mine(C.altP[k]):[];
@@ -456,8 +456,8 @@ function renderCancha(C){
     const z=document.createElement('div');z.className='zone';z.style.left=x+'%';z.style.top=y+'%';
     const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
     const st=stat(avail,1);
-    z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${v.ab}</span>`}</div>
-      <span class="zl">${v.s}<i class="${st[0]}" title="${st[1]}">${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
+    z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${hab||v.ab}</span>`}</div>
+      <span class="zl">${hs||v.s}<i class="${st[0]}" title="${st[1]}">${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
     pitch.appendChild(z);
   });
   const outK=Object.keys(POS).filter(k=>k!=='DT'&&!POS[k].need&&C.idealP[k].length);
