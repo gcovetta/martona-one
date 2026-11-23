@@ -113,15 +113,17 @@ input,select{font:500 1rem var(--body);color:var(--ink);background:var(--surface
 .bench .b .pos{font:700 .72rem var(--display);color:var(--muted);letter-spacing:.06em}
 @media (min-width:480px){.row3{grid-template-columns:repeat(3,minmax(0,1fr))}.lines{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (prefers-reduced-motion:no-preference){.slot .av,.slot .hole{transition:box-shadow .15s,transform .15s}.slot:hover .av,.slot:hover .hole{transform:scale(1.06)}}
-.zone{position:absolute;transform:translate(-50%,-50%);width:29%;display:flex;flex-direction:column;align-items:center;gap:5px}
+.zone{position:absolute;transform:translate(-50%,-50%);width:25%;display:flex;flex-direction:column;align-items:center;gap:5px}
 .zone.c{width:35%}
 .faces{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
 .face{background:none;border:0;padding:0;cursor:pointer;border-radius:50%}
-.face .av{width:36px;height:36px;font-size:.85rem;box-shadow:0 0 0 2.5px var(--ring)}
+.face .av{width:32px;height:32px;font-size:.78rem;box-shadow:0 0 0 2.5px var(--ring)}
 .face .num{font-size:.6rem;min-width:16px;height:16px;right:-5px;bottom:-5px}
-.face.alt{opacity:.9}
-.hole2{width:36px;height:36px;border-radius:50%;border:2px dashed var(--chalk);background:var(--slot);display:grid;place-items:center;font:800 .9rem var(--display);color:#fff}
-.zl{font:700 .74rem var(--display);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(8,28,17,.75);padding:2px 7px;border-radius:6px;white-space:nowrap;display:flex;gap:5px;align-items:center}
+.face.alt .av{width:25px;height:25px;font-size:.62rem}
+.face.alt .num{display:none}
+.faces{max-width:100%}
+.hole2{width:32px;height:32px;border-radius:50%;border:2px dashed var(--chalk);background:var(--slot);display:grid;place-items:center;font:800 .9rem var(--display);color:#fff}
+.zl{font:700 .66rem var(--display);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(8,28,17,.75);padding:2px 7px;border-radius:6px;white-space:nowrap;display:flex;gap:5px;align-items:center}
 .zl i{font-style:normal;min-width:18px;height:16px;border-radius:8px;display:grid;place-items:center;font-size:.72rem;padding:0 4px}
 .zl i.ok{background:var(--ok);color:#06200d}.zl i.alt{background:var(--alt);color:#231a00}.zl i.bad{background:var(--bad);color:#fff}
 .toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--ink);cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500;flex-direction:row}
@@ -173,7 +175,7 @@ td.names .a{color:var(--muted)}
         <div class="lines" id="lines"></div>
       </div>
       <div class="toolbar">
-        <h2>Plantel por posición ideal</h2>
+        <label for="formSel" style="flex:1;min-width:170px">Táctica<select id="formSel"></select></label>
         <label class="toggle" for="showAlt"><input type="checkbox" id="showAlt">Sumar alternativas</label>
       </div>
       <div class="pitch" id="pitch">
@@ -197,6 +199,8 @@ td.names .a{color:var(--muted)}
       </div>
       <p style="margin:0;color:var(--muted);font-size:.85rem">El número de cada puesto se pinta <b style="color:var(--bad)">rojo</b> si faltan, <b style="color:var(--ok)">verde</b> si está cubierto y <b style="color:var(--alt)">amarillo</b> si sobran. Tocá una cara para editar al jugador.</p>
       <div class="panel">
+        <div id="outWrap" style="display:flex;flex-direction:column;gap:8px" hidden><h2>Fuera de esta táctica</h2><div class="faces" id="outFaces" style="justify-content:flex-start"></div>
+        <span style="color:var(--muted);font-size:.85rem" id="outTxt"></span></div>
         <div class="strip"><h2>DT</h2><div class="faces" id="dtFaces"></div></div>
         <div style="display:flex;flex-direction:column;gap:8px"><h2>Sin posición cargada</h2><div class="faces" id="noPos" style="justify-content:flex-start"></div>
         <span style="color:var(--muted);font-size:.85rem">Tocá una cara para cargarle la posición.</span></div>
@@ -216,7 +220,7 @@ td.names .a{color:var(--muted)}
   <section id="v-tabla" class="view" hidden>
     <div class="panel">
       <h2>Posiciones del plantel</h2>
-      <span style="color:var(--muted);font-size:.88rem">"Nec." son los titulares de un 4-4-2. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
+      <span style="color:var(--muted);font-size:.88rem">"Nec." son los titulares de la táctica <b id="tblForm"></b>. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
       <div class="tbl"><table id="table"></table></div>
     </div>
   </section>
@@ -265,19 +269,33 @@ td.names .a{color:var(--muted)}
 const SUPABASE_URL = 'https://vadfmrjkwfbkgkhwkgae.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_loe17kyI6t-6uwcUiLXB_w_3UKd98Q2';
 const POS = {
-  ARQ:{ab:'ARQ',s:'Arquero',n:'Arquero',l:'ARQ',need:1,x:50,y:88},
-  DFI:{ab:'DI',s:'Def. izq.',n:'Defensor por izquierda',l:'DEF',need:1,x:17,y:69},
-  DFC:{ab:'DC',s:'Def. central',n:'Defensor central',l:'DEF',need:2,x:50,y:71,c:1},
-  DFD:{ab:'DD',s:'Def. der.',n:'Defensor por derecha',l:'DEF',need:1,x:83,y:69},
-  MI:{ab:'MI',s:'Med. izq.',n:'Mediocampista por izquierda',l:'MED',need:1,x:17,y:44},
-  MC:{ab:'MC',s:'Med. central',n:'Mediocampista central',l:'MED',need:2,x:50,y:46,c:1},
-  MD:{ab:'MD',s:'Med. der.',n:'Mediocampista por derecha',l:'MED',need:1,x:83,y:44},
-  DLI:{ab:'DLI',s:'Del. izq.',n:'Delantero por izquierda',l:'ATA',need:1,x:28,y:18},
-  DLD:{ab:'DLD',s:'Del. der.',n:'Delantero por derecha',l:'ATA',need:1,x:72,y:18},
+  ARQ:{ab:'ARQ',s:'Arquero',n:'Arquero',l:'ARQ'},
+  DFI:{ab:'DI',s:'Def. izq.',n:'Defensor por izquierda',l:'DEF'},
+  DFC:{ab:'DC',s:'Def. cent.',n:'Defensor central',l:'DEF'},
+  DFD:{ab:'DD',s:'Def. der.',n:'Defensor por derecha',l:'DEF'},
+  MI:{ab:'MI',s:'Med. izq.',n:'Mediocampista por izquierda',l:'MED'},
+  MC:{ab:'MC',s:'Med. cent.',n:'Mediocampista central',l:'MED'},
+  MD:{ab:'MD',s:'Med. der.',n:'Mediocampista por derecha',l:'MED'},
+  ENG:{ab:'EN',s:'Enganche',n:'Enganche',l:'MED'},
+  DLI:{ab:'DLI',s:'Del. izq.',n:'Delantero por izquierda',l:'ATA'},
+  DCN:{ab:'DEL',s:'Del. centro',n:'Delantero centro',l:'ATA'},
+  DLD:{ab:'DLD',s:'Del. der.',n:'Delantero por derecha',l:'ATA'},
   DT:{ab:'DT',s:'DT',n:'DT (director técnico)',l:'DT',need:1}
 };
+const BACK4=[['ARQ',50,89],['DFI',12,64],['DFC',33,74],['DFC',67,74],['DFD',88,64]];
+const FORMS={
+  '442':{n:'4-4-2',s:[...BACK4,['MI',13,43],['MC',35,50],['MC',65,50],['MD',87,43],['DLI',33,17],['DLD',67,17]]},
+  '433':{n:'4-3-3',s:[...BACK4,['MI',22,47],['MC',50,52],['MD',78,47],['DLI',16,21],['DCN',50,15],['DLD',84,21]]},
+  '4231':{n:'4-2-3-1',s:[...BACK4,['MC',30,56],['MC',70,56],['MI',14,33],['ENG',50,35],['MD',86,33],['DCN',50,13]]},
+  '4312':{n:'4-3-1-2 (con enganche)',s:[...BACK4,['MI',16,50],['MC',50,54],['MD',84,50],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
+  '352':{n:'3-5-2',s:[['ARQ',50,89],['DFC',22,72],['DFC',50,75],['DFC',78,72],['MI',12,47],['MC',35,54],['MC',65,54],['MD',88,47],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
+  '451':{n:'4-5-1',s:[...BACK4,['MI',12,42],['MC',31,50],['ENG',50,38],['MC',69,50],['MD',88,42],['DCN',50,14]]}
+};
+let FORM='442';try{const v=localStorage.getItem('martona40-form');if(v&&FORMS[v])FORM=v}catch(e){}
+function applyForm(){Object.keys(POS).forEach(k=>{if(k!=='DT')POS[k].need=FORMS[FORM].s.filter(x=>x[0]===k).length})}
+applyForm();
 const LINES = [['ARQ','Arquero'],['DEF','Defensa'],['MED','Medio'],['ATA','Ataque']];
-const OLD = {LD:'DFD',LI:'DFI',VC:'MC',EN:'MC',VD:'MD',VI:'MI',ED:'DLD',EI:'DLI',DEL:''};
+const OLD = {LD:'DFD',LI:'DFI',VC:'MC',EN:'ENG',VD:'MD',VI:'MI',ED:'DLD',EI:'DLI',DEL:'DCN'};
 const KEY='martona40-v2';
 const ROSTER=['Agustín Campos','Martín Prat','Pablo González','Ale Maya','Pablo Grosso','Ger Ríos','Pablo Maya','Ignacio Pastore','Javi Vestillero','Martín Amas','Kevin Misciel','Gastón Covetta','Emiliano Chaparro','Fernando Areán','Ger Mansilla'];
 function seed(){return {players:ROSTER.map((n,i)=>n==='Gastón Covetta'
@@ -342,7 +360,7 @@ function avatar(p,f){
 const dn=p=>p.nick?`${p.name} “${p.nick}”`:p.name;
 const face=(p,f)=>`<button type="button" class="face ${f}" data-id="${p.id}" title="${esc(dn(p))}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
 const sorted=()=>[...S.players].sort((a,b)=>a.name.localeCompare(b.name,'es'));
-function stat(n,need){return n<need?['bad',`Faltan ${need-n}`]:(n>need+1?['alt',`Sobran ${n-need}`]:['ok','Cubierto'])}
+function stat(n,need){if(!need)return n?['alt','No se usa']:['ok','—'];return n<need?['bad',`Faltan ${need-n}`]:(n>need+1?['alt',`Sobran ${n-need}`]:['ok','Cubierto'])}
 
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
@@ -352,6 +370,8 @@ function showTab(t){
   try{sessionStorage.setItem(KEY+'-tab',t)}catch(e){}
   render();
 }
+$('formSel').innerHTML=Object.entries(FORMS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');$('formSel').value=FORM;
+$('formSel').onchange=e=>{FORM=e.target.value;try{localStorage.setItem('martona40-form',FORM)}catch(_){};applyForm();render()};
 let showAlt=true;try{showAlt=localStorage.getItem(KEY+'-alt2')!=='0'}catch(e){}
 $('showAlt').checked=showAlt;
 $('showAlt').onchange=e=>{showAlt=e.target.checked;try{localStorage.setItem(KEY+'-alt2',showAlt?'1':'0')}catch(_){};render()};
@@ -427,21 +447,30 @@ function counts(){
 /* ---------- cancha ---------- */
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
-  Object.entries(POS).filter(([k])=>k!=='DT').forEach(([k,v])=>{
-    const z=document.createElement('div');z.className='zone'+(v.c?' c':'');z.style.left=v.x+'%';z.style.top=v.y+'%';
-    const list=C.idealP[k].map(p=>face(p,'ok')).concat(showAlt?C.altP[k].map(p=>face(p,'alt')):[]);
-    const st=stat(C.ideal[k],v.need);
+  const slots=FORMS[FORM].s;
+  slots.forEach(([k,x,y],si)=>{
+    const v=POS[k],same=slots.map((t,i)=>t[0]===k?i:-1).filter(i=>i>=0),idx=same.indexOf(si),n=same.length;
+    const mine=arr=>arr.filter((_,i)=>i%n===idx);
+    const ip=mine(C.idealP[k]),ap=showAlt?mine(C.altP[k]):[];
+    const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
+    const z=document.createElement('div');z.className='zone';z.style.left=x+'%';z.style.top=y+'%';
+    const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
+    const st=stat(avail,1);
     z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${v.ab}</span>`}</div>
-      <span class="zl">${v.s}<i class="${st[0]}" title="${st[1]}">${C.ideal[k]}${showAlt&&C.alt[k]?'+'+C.alt[k]:''}</i></span>`;
+      <span class="zl">${v.s}<i class="${st[0]}" title="${st[1]}">${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
     pitch.appendChild(z);
   });
+  const outK=Object.keys(POS).filter(k=>k!=='DT'&&!POS[k].need&&C.idealP[k].length);
+  $('outWrap').hidden=!outK.length;
+  $('outFaces').innerHTML=outK.flatMap(k=>C.idealP[k].map(p=>face(p,'ok'))).join('');
+  $('outTxt').textContent=outK.length?'Eligieron como ideal: '+outK.map(k=>`${POS[k].n} (${C.idealP[k].length})`).join(', ')+'. Este esquema no usa ese puesto.':'';
   const dt=C.idealP.DT.map(p=>face(p,'ok')).concat(showAlt?C.altP.DT.map(p=>face(p,'alt')):[]);
   $('dtFaces').innerHTML=dt.length?dt.join(''):'<span style="color:var(--muted);font-size:.9rem">Todavía sin elegir</span>';
   const np=sorted().filter(p=>!p.ideal);
   $('noPos').innerHTML=np.length?np.map(p=>face(p,'')).join(''):'<span style="color:var(--muted);font-size:.9rem">Todos cargaron su posición.</span>';
 
   const need={ARQ:0,DEF:0,MED:0,ATA:0},li={ARQ:0,DEF:0,MED:0,ATA:0},la={ARQ:0,DEF:0,MED:0,ATA:0},lh={ARQ:0,DEF:0,MED:0,ATA:0};
-  Object.entries(POS).forEach(([k,v])=>{if(v.l==='DT')return;need[v.l]+=v.need});
+  Object.entries(POS).forEach(([k,v])=>{if(v.l==='DT')return;need[v.l]+=v.need||0});
   S.players.forEach(p=>{
     if(p.ideal&&POS[p.ideal].l!=='DT'){if(p.inj){lh[POS[p.ideal].l]++;return}li[POS[p.ideal].l]++;}
     if(p.inj)return;
@@ -458,6 +487,7 @@ function renderCancha(C){
 
 /* ---------- tabla ---------- */
 function renderTabla(C){
+  $('tblForm').textContent=FORMS[FORM].n;
   const groups=[...LINES,['DT','Cuerpo técnico']];
   const lab=p=>esc(dn(p))+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
   const nm=k=>C.idealP[k].map(lab).concat(C.altP[k].map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
