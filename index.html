@@ -153,6 +153,7 @@ td.names .a{color:var(--muted)}
 .sync.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px}
 .sync.off::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--alt);margin-right:6px;vertical-align:1px}
 .nick{color:var(--gold);font-weight:600;font-style:italic}
+.code{display:inline-block;min-width:34px;font:800 .78rem var(--display);color:var(--gold);letter-spacing:.04em}
 </style>
 
 <div class="wrap">
@@ -220,7 +221,7 @@ td.names .a{color:var(--muted)}
   <section id="v-tabla" class="view" hidden>
     <div class="panel">
       <h2>Posiciones del plantel</h2>
-      <span style="color:var(--muted);font-size:.88rem">"Nec." son los titulares de la táctica <b id="tblForm"></b>. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
+      <span style="color:var(--muted);font-size:.88rem">Los 11 puestos de la táctica <b id="tblForm"></b>. Cambiala en la pestaña Cancha. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
       <div class="tbl"><table id="table"></table></div>
     </div>
   </section>
@@ -444,14 +445,22 @@ function counts(){
   return {ideal,alt,idealP,altP};
 }
 
+/* ---------- reparto por puesto de la táctica ---------- */
+function slotsOf(C){
+  const slots=FORMS[FORM].s;
+  return slots.map(([k,x,y,hab,hs],si)=>{
+    const same=slots.map((t,i)=>t[0]===k?i:-1).filter(i=>i>=0),idx=same.indexOf(si),n=same.length;
+    const mine=arr=>arr.filter((_,i)=>i%n===idx);
+    const full=POS[k].n+(n>1?(x<50?' izquierdo':x>50?' derecho':''):'');
+    return {k,x,y,ab:hab||POS[k].ab,label:hs||POS[k].s,full,ip:mine(C.idealP[k]),ap:mine(C.altP[k])};
+  });
+}
+
 /* ---------- cancha ---------- */
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
-  const slots=FORMS[FORM].s;
-  slots.forEach(([k,x,y,hab,hs],si)=>{
-    const v=POS[k],same=slots.map((t,i)=>t[0]===k?i:-1).filter(i=>i>=0),idx=same.indexOf(si),n=same.length;
-    const mine=arr=>arr.filter((_,i)=>i%n===idx);
-    const ip=mine(C.idealP[k]),ap=showAlt?mine(C.altP[k]):[];
+  slotsOf(C).forEach(({k,x,y,ab:hab,label:hs,ip,ap:apAll})=>{
+    const v=POS[k],ap=showAlt?apAll:[];
     const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
     const z=document.createElement('div');z.className='zone';z.style.left=x+'%';z.style.top=y+'%';
     const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
@@ -488,17 +497,25 @@ function renderCancha(C){
 /* ---------- tabla ---------- */
 function renderTabla(C){
   $('tblForm').textContent=FORMS[FORM].n;
-  const groups=[...LINES,['DT','Cuerpo técnico']];
   const lab=p=>esc(dn(p))+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
-  const nm=k=>C.idealP[k].map(lab).concat(C.altP[k].map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
+  const names=(ip,ap)=>ip.map(lab).concat(ap.map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
+  const av=a=>a.filter(p=>!p.inj).length;
   const num=(n,need)=>`<span class="st ${stat(n,need)[0]}">${n}</span>`;
-  let h='<thead><tr><th>Posición</th><th class="n">Ideal</th><th class="n">Alt.</th><th class="n">Nec.</th></tr></thead><tbody>';
-  groups.forEach(([l,lbl])=>{
-    const ks=Object.keys(POS).filter(k=>POS[k].l===l);
-    const ti=ks.reduce((a,k)=>a+C.ideal[k],0),ta=ks.reduce((a,k)=>a+C.alt[k],0),tn=ks.reduce((a,k)=>a+POS[k].need,0);
+  const SL=slotsOf(C);
+  let h='<thead><tr><th>Puesto</th><th class="n">Ideal</th><th class="n">Alt.</th><th class="n">Nec.</th></tr></thead><tbody>';
+  LINES.forEach(([l,lbl])=>{
+    const rows=SL.filter(t=>POS[t.k].l===l).sort((a,b)=>a.x-b.x||b.y-a.y);
+    const ti=rows.reduce((a,t)=>a+av(t.ip),0),ta=rows.reduce((a,t)=>a+av(t.ap),0),tn=rows.length;
     h+=`<tr class="grp"><td>${lbl} <span class="st ${stat(ti,tn)[0]}" style="margin-left:4px">${stat(ti,tn)[1]}</span></td><td class="n">${ti}</td><td class="n">${ta}</td><td class="n">${tn}</td></tr>`;
-    ks.forEach(k=>{h+=`<tr><td><div style="font-weight:600">${POS[k].n}</div><div class="names">${nm(k)}</div></td><td class="n">${num(C.ideal[k],POS[k].need)}</td><td class="n">${C.alt[k]}</td><td class="n">${POS[k].need}</td></tr>`});
+    rows.forEach(t=>{h+=`<tr><td><div style="font-weight:600"><span class="code">${t.ab}</span>${t.full}</div><div class="names">${names(t.ip,t.ap)}</div></td><td class="n">${num(av(t.ip),1)}</td><td class="n">${av(t.ap)}</td><td class="n">1</td></tr>`});
   });
+  const outK=Object.keys(POS).filter(k=>k!=='DT'&&!POS[k].need&&(C.idealP[k].length||C.altP[k].length));
+  if(outK.length){
+    h+=`<tr class="grp"><td>Fuera de esta táctica</td><td></td><td></td><td></td></tr>`;
+    outK.forEach(k=>{h+=`<tr><td><div style="font-weight:600">${POS[k].n}</div><div class="names">${names(C.idealP[k],C.altP[k])}</div></td><td class="n">${C.ideal[k]}</td><td class="n">${C.alt[k]}</td><td class="n">0</td></tr>`});
+  }
+  h+=`<tr class="grp"><td>Cuerpo técnico <span class="st ${stat(C.ideal.DT,1)[0]}" style="margin-left:4px">${stat(C.ideal.DT,1)[1]}</span></td><td></td><td></td><td></td></tr>`;
+  h+=`<tr><td><div style="font-weight:600"><span class="code">DT</span>Director técnico</div><div class="names">${names(C.idealP.DT,C.altP.DT)}</div></td><td class="n">${num(C.ideal.DT,1)}</td><td class="n">${C.alt.DT}</td><td class="n">1</td></tr>`;
   const np=sorted().filter(p=>!p.ideal);
   h+=`<tr class="grp"><td>Sin cargar</td><td class="n">${np.length}</td><td></td><td></td></tr>`;
   if(np.length)h+=`<tr><td colspan="4" class="names">${np.map(p=>esc(p.name)).join(', ')}</td></tr>`;
