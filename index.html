@@ -160,6 +160,13 @@ td.names .a{color:var(--muted)}
 .note{margin:0;padding:10px 12px;border-left:3px solid var(--gold);background:var(--surface);border-radius:0 10px 10px 0;font-size:.9rem;color:var(--ink);font-style:italic}
 .tally{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:.88rem;color:var(--muted);margin-top:-6px}
 .tally b{font:800 1.15rem var(--display);color:var(--accent);margin-right:3px;font-variant-numeric:tabular-nums}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.foot{position:absolute;left:-5px;bottom:-5px;z-index:1;min-width:17px;height:17px;border-radius:9px;display:grid;place-items:center;font:800 .64rem var(--display);padding:0 3px;background:var(--accent);color:var(--accent-ink);box-shadow:0 1px 3px rgba(0,0,0,.45)}
+.foot.fI{background:var(--gold);color:#231a00}
+.foot.fA{background:#9fd3ff;color:#0b2233}
+.face .foot{min-width:14px;height:14px;font-size:.55rem;left:-6px;bottom:-6px}
+.face.alt .foot{display:none}
+.fx{font-size:.75rem;color:var(--muted);font-style:italic}
 </style>
 
 <div class="wrap">
@@ -205,6 +212,7 @@ td.names .a{color:var(--muted)}
         <span><i class="dot" style="background:var(--ok)"></i>Posición ideal</span>
         <span><i class="dot" style="background:var(--alt)"></i>Alternativa (2ª o 3ª)</span>
         <span><span class="av" style="width:16px;height:16px;box-shadow:none;background:none"><span class="inj" style="left:0;top:0;width:16px;height:16px"></span></span>Lesionado</span>
+        <span><span class="av" style="width:17px;height:17px;box-shadow:none;background:none"><span class="foot" style="left:0;bottom:0">D</span></span><span class="av" style="width:17px;height:17px;box-shadow:none;background:none"><span class="foot fI" style="left:0;bottom:0">I</span></span><span class="av" style="width:17px;height:17px;box-shadow:none;background:none"><span class="foot fA" style="left:0;bottom:0">A</span></span>Pierna hábil</span>
       </div>
       <p style="margin:0;color:var(--muted);font-size:.85rem">Los puestos con borde punteado no están en la táctica elegida, pero se muestran para ver quién los eligió. El número de cada puesto se pinta <b style="color:var(--bad)">rojo</b> si faltan, <b style="color:var(--ok)">verde</b> si está cubierto y <b style="color:var(--alt)">amarillo</b> si sobran. Tocá una cara para editar al jugador.</p>
       <div class="panel">
@@ -243,7 +251,10 @@ td.names .a{color:var(--muted)}
           <label for="f-name">Nombre<input id="f-name" required maxlength="40" placeholder="Ej: Juan Pérez"></label>
           <label for="f-num">Número<input id="f-num" type="number" min="1" max="99" inputmode="numeric" placeholder="10"></label>
         </div>
-        <label for="f-nick">Apodo (opcional)<input id="f-nick" maxlength="24" placeholder="Ej: el Flaco"></label>
+        <div class="row2">
+          <label for="f-nick">Apodo (opcional)<input id="f-nick" maxlength="24" placeholder="Ej: el Flaco"></label>
+          <label for="f-foot">Pierna hábil<select id="f-foot"><option value="">Sin definir</option><option value="D">Derecha</option><option value="I">Izquierda</option><option value="A">Ambas</option></select></label>
+        </div>
         <div class="row3">
           <label for="f-ideal">Posición ideal<select id="f-ideal"></select></label>
           <label for="f-alt1">2ª opción<select id="f-alt1"></select></label>
@@ -322,9 +333,9 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---------- Supabase ---------- */
 const sb=(SUPABASE_URL&&SUPABASE_ANON_KEY&&window.supabase)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 function setSync(cls,txt){const el=$('sync');if(!el)return;el.className='sync '+cls;el.textContent=txt}
-const toRow=p=>({id:p.id,name:p.name,nick:p.nick||null,num:p.num||null,ideal:p.ideal||null,alt1:p.alt1||null,alt2:p.alt2||null,photo:p.photo||null,
+const toRow=p=>({id:p.id,name:p.name,nick:p.nick||null,foot:p.foot||null,num:p.num||null,ideal:p.ideal||null,alt1:p.alt1||null,alt2:p.alt2||null,photo:p.photo||null,
   inj:!!p.inj,inj_weeks:p.injWeeks||null,inj_since:p.injSince?new Date(p.injSince).toISOString():null});
-const fromRow=r=>({id:r.id,name:r.name,nick:r.nick||'',num:r.num||'',ideal:r.ideal||'',alt1:r.alt1||'',alt2:r.alt2||'',photo:r.photo||'',
+const fromRow=r=>({id:r.id,name:r.name,nick:r.nick||'',foot:r.foot||'',num:r.num||'',ideal:r.ideal||'',alt1:r.alt1||'',alt2:r.alt2||'',photo:r.photo||'',
   inj:!!r.inj,injWeeks:r.inj_weeks||0,injSince:r.inj_since?Date.parse(r.inj_since):0});
 async function pull(){
   if(!sb){setSync('off','Guardado solo en este dispositivo');return}
@@ -335,7 +346,7 @@ async function pull(){
 async function pushPlayer(p){
   save();if(!sb)return;
   let {error}=await sb.from('jugadores').upsert(toRow(p));
-  if(error&&/nick/.test(error.message)){const row=toRow(p);delete row.nick;({error}=await sb.from('jugadores').upsert(row));}
+  if(error&&/nick|foot/.test(error.message)){const row=toRow(p);delete row.nick;delete row.foot;({error}=await sb.from('jugadores').upsert(row));}
   if(error){setSync('off','No se pudo guardar en línea: '+error.message)}else setSync('on','Sincronizado con el equipo');
 }
 async function removePlayer(id){
@@ -364,8 +375,9 @@ const ringVar={ok:'var(--ok)',alt:'var(--alt)','':'var(--muted)'};
 function avatar(p,f){
   const inner=p.photo?`<img src="${p.photo}" alt="">`:esc(initials(p.name));
   const bg=p.photo?'':`background:hsl(${hue(p.name)} 38% 36%)`;
-  return `<span class="av${p.inj?' hurt':''}" style="--ring:${ringVar[f||'']};${bg}">${inner}${p.inj?'<span class="inj" title="Lesionado"></span>':''}${weeksLeft(p)!==null?`<span class="injw" title="Semanas para recuperarse">${weeksLeft(p)}S</span>`:''}${p.num?`<span class="num">${esc(p.num)}</span>`:''}</span>`;
+  return `<span class="av${p.inj?' hurt':''}" style="--ring:${ringVar[f||'']};${bg}">${inner}${p.inj?'<span class="inj" title="Lesionado"></span>':''}${p.foot?`<span class="foot f${p.foot}" title="Pierna hábil: ${FOOT[p.foot]}">${p.foot}</span>`:''}${weeksLeft(p)!==null?`<span class="injw" title="Semanas para recuperarse">${weeksLeft(p)}S</span>`:''}${p.num?`<span class="num">${esc(p.num)}</span>`:''}</span>`;
 }
+const FOOT={D:'Derecha',I:'Izquierda',A:'Ambas'};
 const dn=p=>p.nick?`${p.name} “${p.nick}”`:p.name;
 const face=(p,f)=>`<button type="button" class="face ${f}" data-id="${p.id}" title="${esc(dn(p))}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
 const sorted=()=>[...S.players].sort((a,b)=>a.name.localeCompare(b.name,'es'));
@@ -413,7 +425,7 @@ function edit(id){
   const p=byId(id);if(!p)return;
   if($('v-plantel').hidden)showTab('plantel');
   editing=id;photoData=p.photo||'';delArmed=false;
-  $('f-name').value=p.name;$('f-nick').value=p.nick||'';$('f-num').value=p.num||'';$('f-ideal').value=p.ideal;$('f-alt1').value=p.alt1||'';$('f-alt2').value=p.alt2||'';$('f-inj').checked=!!p.inj;$('f-weeks').value=weeksLeft(p)??'';syncInj();
+  $('f-name').value=p.name;$('f-nick').value=p.nick||'';$('f-foot').value=p.foot||'';$('f-num').value=p.num||'';$('f-ideal').value=p.ideal;$('f-alt1').value=p.alt1||'';$('f-alt2').value=p.alt2||'';$('f-inj').checked=!!p.inj;$('f-weeks').value=weeksLeft(p)??'';syncInj();
   $('formTitle').textContent='Editar jugador';$('f-save').textContent='Guardar cambios';
   $('f-cancel').hidden=false;$('f-del').hidden=false;$('f-del').textContent='Borrar';$('f-err').hidden=true;prev();
   $('form').scrollIntoView({behavior:'smooth',block:'start'});
@@ -425,7 +437,7 @@ $('f-del').onclick=()=>{
 };
 $('form').onsubmit=e=>{
   e.preventDefault();
-  const name=$('f-name').value.trim(),nick=$('f-nick').value.trim(),num=parseInt($('f-num').value,10)||'',ideal=$('f-ideal').value,alt1=$('f-alt1').value,alt2=$('f-alt2').value;
+  const name=$('f-name').value.trim(),nick=$('f-nick').value.trim(),foot=$('f-foot').value,num=parseInt($('f-num').value,10)||'',ideal=$('f-ideal').value,alt1=$('f-alt1').value,alt2=$('f-alt2').value;
   const err=m=>{$('f-err').textContent=m;$('f-err').hidden=false};
   if(!name)return err('Falta el nombre.');
   if(ideal&&(alt1===ideal||alt2===ideal))return err('Las opciones 2 y 3 tienen que ser distintas de la ideal.');
@@ -435,7 +447,7 @@ $('form').onsubmit=e=>{
   const old=editing?byId(editing):null;
   let injWeeks=0,injSince=0;
   if(inj&&wk){ if(old&&old.inj&&weeksLeft(old)===wk){injWeeks=old.injWeeks;injSince=old.injSince}else{injWeeks=wk;injSince=Date.now()} }
-  const data={name,nick,num,ideal,alt1,alt2,photo:photoData,inj,injWeeks,injSince};
+  const data={name,nick,foot,num,ideal,alt1,alt2,photo:photoData,inj,injWeeks,injSince};
   let p;
   if(editing){p=byId(editing);Object.assign(p,data)}
   else{p={id:'p'+Date.now().toString(36),...data};S.players.push(p)}
@@ -527,7 +539,7 @@ function renderCancha(C){
 /* ---------- tabla ---------- */
 function renderTabla(C){
   $('tblForm').textContent=FORMS[FORM].n;
-  const lab=p=>esc(dn(p))+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
+  const lab=p=>esc(dn(p))+(p.foot?` <span class="fx">${p.foot==='A'?'ambas':p.foot==='I'?'zurdo':'diestro'}</span>`:'')+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
   const names=(ip,ap)=>ip.map(lab).concat(ap.map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
   const av=a=>a.filter(p=>!p.inj).length;
   const num=(n,need)=>`<span class="st ${stat(n,need)[0]}">${n}</span>`;
@@ -558,7 +570,7 @@ function renderPlantel(){
   $('pend').textContent=loaded<S.players.length?'Tocá un nombre para cargar su posición':'';
   $('list').innerHTML=sorted().length?sorted().map(p=>`<button type="button" class="pl" data-id="${p.id}">${avatar(p,p.ideal?'ok':'')}
     <span class="info"><span class="nm">${esc(p.name)}${p.nick?`<span class="nick">“${esc(p.nick)}”</span>`:''}${p.ideal?'':'<span class="tag">falta posición</span>'}${p.inj?`<span class="tag inj-t">${injTxt(p)}</span>`:''}</span>
-    <span class="ps">${p.ideal?`<b>${POS[p.ideal].n}</b>${p.alt1?' · '+POS[p.alt1].n:''}${p.alt2?' · '+POS[p.alt2].n:''}`:(p.alt1||p.alt2?'Sin ideal · '+[p.alt1,p.alt2].filter(Boolean).map(c=>POS[c].n).join(' · '):'Sin cargar')}</span></span></button>`).join('')
+    <span class="ps">${p.foot?`Pierna ${FOOT[p.foot].toLowerCase()} · `:""}${p.ideal?`<b>${POS[p.ideal].n}</b>${p.alt1?' · '+POS[p.alt1].n:''}${p.alt2?' · '+POS[p.alt2].n:''}`:(p.alt1||p.alt2?'Sin ideal · '+[p.alt1,p.alt2].filter(Boolean).map(c=>POS[c].n).join(' · '):'Sin cargar')}</span></span></button>`).join('')
     :'<p class="empty">Todavía no hay jugadores. Sumá el primero con el formulario.</p>';
 }
 

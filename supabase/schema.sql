@@ -59,3 +59,6 @@ on conflict (id) do nothing;
 
 -- Apodo (agregado después)
 alter table public.jugadores add column if not exists nick text;
+
+-- Pierna hábil (D = derecha, I = izquierda, A = ambas)
+alter table public.jugadores add column if not exists foot text;
