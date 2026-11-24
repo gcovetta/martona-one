@@ -464,12 +464,15 @@ const ALWAYS=['ENG','DCN'];
 /* ---------- cancha ---------- */
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
-  slotsOf(C).forEach(({k,x,y,ab:hab,label:hs,ip,ap:apAll})=>{
+  // los defensores centrales se muestran en un solo lugar del mapa
+  const SL=slotsOf(C),dfc=SL.filter(t=>t.k==='DFC');
+  const mapSlots=dfc.length>1?[...SL.filter(t=>t.k!=='DFC'),{k:'DFC',x:50,y:Math.max(...dfc.map(t=>t.y)),ab:'DFC',label:'Def. central',ip:C.idealP.DFC,ap:C.altP.DFC,need:dfc.length,c:1}]:SL;
+  mapSlots.forEach(({k,x,y,ab:hab,label:hs,ip,ap:apAll,need=1,c})=>{
     const v=POS[k],ap=showAlt?apAll:[];
     const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
-    const z=document.createElement('div');z.className='zone';z.style.left=x+'%';z.style.top=y+'%';
+    const z=document.createElement('div');z.className='zone'+(c?' c':'');z.style.left=x+'%';z.style.top=y+'%';
     const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
-    const st=stat(avail,1);
+    const st=stat(avail,need);
     z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${hab||v.ab}</span>`}</div>
       <span class="zl">${hs||v.s}<i class="${st[0]}" title="${st[1]}">${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
     pitch.appendChild(z);
