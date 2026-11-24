@@ -154,6 +154,9 @@ td.names .a{color:var(--muted)}
 .sync.off::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--alt);margin-right:6px;vertical-align:1px}
 .nick{color:var(--gold);font-weight:600;font-style:italic}
 .code{display:inline-block;min-width:34px;font:800 .78rem var(--display);color:var(--gold);letter-spacing:.04em}
+.zone.extra .zl{background:rgba(8,28,17,.5);border:1px dashed var(--chalk)}
+.zone.extra .zl i{background:rgba(255,255,255,.25);color:#fff}
+.zone.extra .hole2{opacity:.6}
 </style>
 
 <div class="wrap">
@@ -198,7 +201,7 @@ td.names .a{color:var(--muted)}
         <span><i class="dot" style="background:var(--alt)"></i>Alternativa (2ª o 3ª)</span>
         <span><span class="av" style="width:16px;height:16px;box-shadow:none;background:none"><span class="inj" style="left:0;top:0;width:16px;height:16px"></span></span>Lesionado</span>
       </div>
-      <p style="margin:0;color:var(--muted);font-size:.85rem">El número de cada puesto se pinta <b style="color:var(--bad)">rojo</b> si faltan, <b style="color:var(--ok)">verde</b> si está cubierto y <b style="color:var(--alt)">amarillo</b> si sobran. Tocá una cara para editar al jugador.</p>
+      <p style="margin:0;color:var(--muted);font-size:.85rem">Los puestos con borde punteado no están en la táctica elegida, pero se muestran para ver quién los eligió. El número de cada puesto se pinta <b style="color:var(--bad)">rojo</b> si faltan, <b style="color:var(--ok)">verde</b> si está cubierto y <b style="color:var(--alt)">amarillo</b> si sobran. Tocá una cara para editar al jugador.</p>
       <div class="panel">
         <div id="outWrap" style="display:flex;flex-direction:column;gap:8px" hidden><h2>Fuera de esta táctica</h2><div class="faces" id="outFaces" style="justify-content:flex-start"></div>
         <span style="color:var(--muted);font-size:.85rem" id="outTxt"></span></div>
@@ -279,17 +282,17 @@ const POS = {
   MD:{ab:'MD',s:'Med. der.',n:'Mediocampista por derecha',l:'MED'},
   ENG:{ab:'EN',s:'Enganche',n:'Enganche',l:'MED'},
   DLI:{ab:'DLI',s:'Del. izq.',n:'Delantero por izquierda',l:'ATA'},
-  DCN:{ab:'DEL',s:'Del. centro',n:'Delantero centro',l:'ATA'},
+  DCN:{ab:'DC',s:'Del. centro',n:'Delantero centro',l:'ATA'},
   DLD:{ab:'DLD',s:'Del. der.',n:'Delantero por derecha',l:'ATA'},
   DT:{ab:'DT',s:'DT',n:'DT (director técnico)',l:'DT',need:1}
 };
 const BACK4=[['ARQ',50,89],['DFI',12,64],['DFC',33,74,'DCI','DCI'],['DFC',67,74,'DCD','DCD'],['DFD',88,64]];
 const FORMS={
-  '4312':{n:'4-3-1-2 (con enganche)',s:[...BACK4,['MI',16,50],['MC',50,54],['MD',84,50],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
-  '442':{n:'4-4-2',s:[...BACK4,['MI',13,43],['MC',35,50],['MC',65,50],['MD',87,43],['DLI',33,17],['DLD',67,17]]},
+  '4312':{n:'4-3-1-2',s:[...BACK4,['MI',16,50],['MC',50,54],['MD',84,50],['ENG',50,35],['DLI',24,23],['DLD',76,23]]},
+  '442':{n:'4-4-2',s:[...BACK4,['MI',13,43],['MC',35,50],['MC',65,50],['MD',87,43],['DLI',24,23],['DLD',76,23]]},
   '433':{n:'4-3-3',s:[...BACK4,['MI',22,47],['MC',50,52],['MD',78,47],['DLI',16,21],['DCN',50,15],['DLD',84,21]]},
   '4231':{n:'4-2-3-1',s:[...BACK4,['MC',30,56],['MC',70,56],['MI',14,33],['ENG',50,35],['MD',86,33],['DCN',50,13]]},
-  '352':{n:'3-5-2',s:[['ARQ',50,89],['DFC',22,72,'DCI','DCI'],['DFC',50,75,'DC','DC'],['DFC',78,72,'DCD','DCD'],['MI',12,47],['MC',35,54],['MC',65,54],['MD',88,47],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
+  '352':{n:'3-5-2',s:[['ARQ',50,89],['DFC',22,72,'DCI','DCI'],['DFC',50,75,'DFC','Def. cent.'],['DFC',78,72,'DCD','DCD'],['MI',12,47],['MC',35,54],['MC',65,54],['MD',88,47],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
   '451':{n:'4-5-1',s:[...BACK4,['MI',12,42],['MC',31,50],['ENG',50,38],['MC',69,50],['MD',88,42],['DCN',50,14]]}
 };
 let FORM='4312';try{const v=localStorage.getItem('martona40-form2');if(v&&FORMS[v])FORM=v}catch(e){}
@@ -456,6 +459,8 @@ function slotsOf(C){
   });
 }
 
+const EXTRA_XY={DFI:[10,60],DFD:[90,60],DFC:[50,80],MI:[10,40],MD:[90,40],MC:[50,60],ENG:[50,33],DLI:[20,10],DLD:[80,10],DCN:[50,8]};
+const ALWAYS=['ENG','DCN'];
 /* ---------- cancha ---------- */
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
@@ -469,10 +474,17 @@ function renderCancha(C){
       <span class="zl">${hs||v.s}<i class="${st[0]}" title="${st[1]}">${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
     pitch.appendChild(z);
   });
-  const outK=Object.keys(POS).filter(k=>k!=='DT'&&!POS[k].need&&C.idealP[k].length);
-  $('outWrap').hidden=!outK.length;
-  $('outFaces').innerHTML=outK.flatMap(k=>C.idealP[k].map(p=>face(p,'ok'))).join('');
-  $('outTxt').textContent=outK.length?'Eligieron como ideal: '+outK.map(k=>`${POS[k].n} (${C.idealP[k].length})`).join(', ')+'. Este esquema no usa ese puesto.':'';
+  // puestos que la táctica no usa: se muestran igual en la cancha, marcados como extra
+  Object.keys(EXTRA_XY).filter(k=>!POS[k].need&&(ALWAYS.includes(k)||C.idealP[k].length||(showAlt&&C.altP[k].length))).forEach(k=>{
+    const v=POS[k],[x,y]=EXTRA_XY[k],ip=C.idealP[k],ap=showAlt?C.altP[k]:[];
+    const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
+    const z=document.createElement('div');z.className='zone extra';z.style.left=x+'%';z.style.top=y+'%';
+    const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
+    z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${v.ab}</span>`}</div>
+      <span class="zl" title="Este puesto no está en la táctica elegida">${v.s}<i>${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
+    pitch.appendChild(z);
+  });
+  $('outWrap').hidden=true;
   const dt=C.idealP.DT.map(p=>face(p,'ok')).concat(showAlt?C.altP.DT.map(p=>face(p,'alt')):[]);
   $('dtFaces').innerHTML=dt.length?dt.join(''):'<span style="color:var(--muted);font-size:.9rem">Todavía sin elegir</span>';
   const np=sorted().filter(p=>!p.ideal);
@@ -511,7 +523,7 @@ function renderTabla(C){
   });
   const outK=Object.keys(POS).filter(k=>k!=='DT'&&!POS[k].need&&(C.idealP[k].length||C.altP[k].length));
   if(outK.length){
-    h+=`<tr class="grp"><td>Fuera de esta táctica</td><td></td><td></td><td></td></tr>`;
+    h+=`<tr class="grp"><td>Otros puestos (no están en esta táctica)</td><td></td><td></td><td></td></tr>`;
     outK.forEach(k=>{h+=`<tr><td><div style="font-weight:600">${POS[k].n}</div><div class="names">${names(C.idealP[k],C.altP[k])}</div></td><td class="n">${C.ideal[k]}</td><td class="n">${C.alt[k]}</td><td class="n">0</td></tr>`});
   }
   h+=`<tr class="grp"><td>Cuerpo técnico <span class="st ${stat(C.ideal.DT,1)[0]}" style="margin-left:4px">${stat(C.ideal.DT,1)[1]}</span></td><td></td><td></td><td></td></tr>`;
