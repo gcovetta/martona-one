@@ -9,7 +9,7 @@
 :root{
   --bg:#0c2618; --surface:#123220; --surface2:#173c27; --ink:#f1e9d2; --muted:#a9b79f; --line:#28513a;
   --accent:#efe6cc; --accent-ink:#0f2b1c; --gold:#f2c318; --olive:#6f8f1f;
-  --ok:#62d36a; --alt:#f7a823; --bad:#f0583f;
+  --ok:#62d36a; --alt:#f7a823; --alt3:#c9a3ff; --bad:#f0583f;
   --grass1:#2c7a45; --grass2:#27703f; --chalk:rgba(255,255,255,.78); --slot:rgba(255,255,255,.12);
   --display:"Barlow Condensed","Arial Narrow",sans-serif;
   --body:"Barlow",system-ui,-apple-system,sans-serif;
@@ -121,8 +121,8 @@ input,select{font:500 1rem var(--body);color:var(--ink);background:var(--surface
 .face{background:none;border:0;padding:0;cursor:pointer;border-radius:50%}
 .face .av{width:32px;height:32px;font-size:.78rem;box-shadow:0 0 0 2.5px var(--ring)}
 .face .num{font-size:.6rem;min-width:16px;height:16px;right:-5px;bottom:-5px}
-.face.alt .av{width:25px;height:25px;font-size:.62rem}
-.face.alt .num{display:none}
+.face.alt .av,.face.alt3 .av{width:25px;height:25px;font-size:.62rem}
+.face.alt .num,.face.alt3 .num,.face.alt3 .foot{display:none}
 .faces{max-width:100%}
 .hole2{width:32px;height:32px;border-radius:50%;border:2px dashed var(--chalk);background:var(--slot);display:grid;place-items:center;font:800 .9rem var(--display);color:#fff}
 .zl{font:700 .66rem var(--display);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(8,28,17,.75);padding:2px 7px;border-radius:6px;white-space:nowrap;display:flex;gap:5px;align-items:center}
@@ -180,6 +180,12 @@ td.names .a{color:var(--muted)}
 .sh-list dt{color:var(--muted);font-weight:600}
 .sh-list dd{margin:0}
 @media (min-width:600px){.sheet-bg{align-items:center}}
+.showset{display:flex;gap:6px;flex-wrap:wrap}
+.shw{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 .92rem var(--display);letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.shw i{width:10px;height:10px;border-radius:50%;opacity:.35}
+.shw[aria-pressed="true"]{background:var(--surface2);color:var(--ink);border-color:var(--accent)}
+.shw[aria-pressed="true"] i{opacity:1}
+.zl i:not(.ok):not(.alt):not(.bad){background:rgba(255,255,255,.25);color:#fff}
 </style>
 
 <div class="wrap">
@@ -204,7 +210,11 @@ td.names .a{color:var(--muted)}
       </div>
       <div class="toolbar">
         <label for="formSel" style="flex:1;min-width:170px">Táctica<select id="formSel"></select></label>
-        <label class="toggle" for="showAlt"><input type="checkbox" id="showAlt">Sumar alternativas</label>
+        <div class="showset" role="group" aria-label="Qué opciones mostrar">
+          <button type="button" class="shw" id="shw-i" data-k="i"><i style="background:var(--ok)"></i>Ideal</button>
+          <button type="button" class="shw" id="shw-2" data-k="a2"><i style="background:var(--alt)"></i>2ª opción</button>
+          <button type="button" class="shw" id="shw-3" data-k="a3"><i style="background:var(--alt3)"></i>3ª opción</button>
+        </div>
       </div>
       <p class="note">Esto es meramente para que el DT tenga una primera mirada de en qué posición se siente más cómodo cada uno.</p>
       <div class="pitch" id="pitch">
@@ -223,7 +233,8 @@ td.names .a{color:var(--muted)}
       </div>
       <div class="legend">
         <span><i class="dot" style="background:var(--ok)"></i>Posición ideal</span>
-        <span><i class="dot" style="background:var(--alt)"></i>Alternativa (2ª o 3ª)</span>
+        <span><i class="dot" style="background:var(--alt)"></i>2ª opción</span>
+        <span><i class="dot" style="background:var(--alt3)"></i>3ª opción</span>
         <span><span class="av" style="width:16px;height:16px;box-shadow:none;background:none"><span class="inj" style="left:0;top:0;width:16px;height:16px"></span></span>Lesionado</span>
         <span><span class="av" style="width:17px;height:17px;box-shadow:none;background:none"><span class="foot" style="left:0;bottom:0">D</span></span><span class="av" style="width:17px;height:17px;box-shadow:none;background:none"><span class="foot fI" style="left:0;bottom:0">I</span></span><span class="av" style="width:17px;height:17px;box-shadow:none;background:none"><span class="foot fA" style="left:0;bottom:0">A</span></span>Pierna hábil</span>
       </div>
@@ -395,7 +406,7 @@ function weeksLeft(p){
   return Math.max(0,Math.ceil((p.injWeeks*7-days)/7));
 }
 const injTxt=p=>{const w=weeksLeft(p);return w===null?'lesionado':`lesionado · ${w}S`};
-const ringVar={ok:'var(--ok)',alt:'var(--alt)','':'var(--muted)'};
+const ringVar={ok:'var(--ok)',alt:'var(--alt)',alt3:'var(--alt3)','':'var(--muted)'};
 function avatar(p,f){
   const inner=p.photo?`<img src="${p.photo}" alt="">`:esc(initials(p.name));
   const bg=p.photo?'':`background:hsl(${hue(p.name)} 38% 36%)`;
@@ -417,9 +428,13 @@ function showTab(t){
 }
 $('formSel').innerHTML=Object.entries(FORMS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');$('formSel').value=FORM;
 $('formSel').onchange=e=>{FORM=e.target.value;try{localStorage.setItem('martona40-form2',FORM)}catch(_){};applyForm();render()};
-let showAlt=true;try{showAlt=localStorage.getItem(KEY+'-alt2')!=='0'}catch(e){}
-$('showAlt').checked=showAlt;
-$('showAlt').onchange=e=>{showAlt=e.target.checked;try{localStorage.setItem(KEY+'-alt2',showAlt?'1':'0')}catch(_){};render()};
+// qué opciones se ven en la cancha: ideal, 2ª y 3ª (las tres prendidas = todos)
+const SHOW={i:true,a2:true,a3:true};
+try{const v=localStorage.getItem(KEY+'-show3');if(v&&/^[01]{3}$/.test(v)){SHOW.i=v[0]==='1';SHOW.a2=v[1]==='1';SHOW.a3=v[2]==='1'}}catch(e){}
+function syncShow(){document.querySelectorAll('.shw').forEach(b=>b.setAttribute('aria-pressed',SHOW[b.dataset.k]?'true':'false'))}
+document.querySelectorAll('.shw').forEach(b=>b.onclick=()=>{SHOW[b.dataset.k]=!SHOW[b.dataset.k];syncShow();
+  try{localStorage.setItem(KEY+'-show3',[SHOW.i,SHOW.a2,SHOW.a3].map(x=>x?1:0).join(''))}catch(_){};render()});
+syncShow();
 
 /* ---------- formulario ---------- */
 const opts=(first)=>`<option value="">${first}</option>`+Object.entries(POS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
@@ -539,32 +554,37 @@ function mergedSlots(C){
 const EXTRA_XY={DFI:[10,60],DFD:[90,60],DFC:[50,80],MI:[10,40],MD:[90,40],MC:[50,60],ENG:[50,33],DLI:[20,10],DLD:[80,10],DCN:[50,8]};
 const ALWAYS=['ENG','DCN'];
 /* ---------- cancha ---------- */
+// arma las caras de un puesto según qué opciones están prendidas
+function zoneFaces(k,ip,ap){
+  const fi=SHOW.i?ip:[],f2=SHOW.a2?ap.filter(p=>p.alt1===k):[],f3=SHOW.a3?ap.filter(p=>p.alt2===k):[];
+  const av=a=>a.filter(p=>!p.inj).length;
+  const html=fi.map(p=>face(p,'ok')).concat(f2.map(p=>face(p,'alt')),f3.map(p=>face(p,'alt3'))).join('');
+  const nI=av(fi),nA=av(f2)+av(f3);
+  const txt=SHOW.i?`${nI}${nA?'+'+nA:''}`:`${nA}`;
+  return {html,nI,txt,any:fi.length+f2.length+f3.length};
+}
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
   // los defensores centrales se muestran en un solo lugar del mapa
   mergedSlots(C).forEach(({k,x,y,ab:hab,label:hs,ip,ap:apAll,need=1,c})=>{
-    const v=POS[k],ap=showAlt?apAll:[];
-    const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
+    const v=POS[k],F=zoneFaces(k,ip,apAll);
     const z=document.createElement('div');z.className='zone'+(c?' c':'');z.style.left=x+'%';z.style.top=y+'%';
-    const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
-    const st=stat(avail,need);
-    z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${hab||v.ab}</span>`}</div>
-      <span class="zl">${hs||v.s}<i class="${st[0]}" title="${st[1]}">${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
+    const st=SHOW.i?stat(F.nI,need):['',''];
+    z.innerHTML=`<div class="faces">${F.any?F.html:`<span class="hole2">${hab||v.ab}</span>`}</div>
+      <span class="zl">${hs||v.s}<i class="${st[0]}" title="${st[1]}">${F.txt}</i></span>`;
     pitch.appendChild(z);
   });
   // puestos que la táctica no usa: se muestran igual en la cancha, marcados como extra
-  Object.keys(EXTRA_XY).filter(k=>!POS[k].need&&(ALWAYS.includes(k)||C.idealP[k].length||(showAlt&&C.altP[k].length))).forEach(k=>{
-    const v=POS[k],[x,y]=EXTRA_XY[k],ip=C.idealP[k],ap=showAlt?C.altP[k]:[];
-    const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
+  Object.keys(EXTRA_XY).filter(k=>!POS[k].need&&(ALWAYS.includes(k)||C.idealP[k].length||C.altP[k].length)).forEach(k=>{
+    const v=POS[k],[x,y]=EXTRA_XY[k],F=zoneFaces(k,C.idealP[k],C.altP[k]);
     const z=document.createElement('div');z.className='zone extra';z.style.left=x+'%';z.style.top=y+'%';
-    const list=ip.map(p=>face(p,'ok')).concat(ap.map(p=>face(p,'alt')));
-    z.innerHTML=`<div class="faces">${list.length?list.join(''):`<span class="hole2">${v.ab}</span>`}</div>
-      <span class="zl" title="Este puesto no está en la táctica elegida">${v.s}<i>${avail}${showAlt&&aAvail?'+'+aAvail:''}</i></span>`;
+    z.innerHTML=`<div class="faces">${F.any?F.html:`<span class="hole2">${v.ab}</span>`}</div>
+      <span class="zl" title="Este puesto no está en la táctica elegida">${v.s}<i>${F.txt}</i></span>`;
     pitch.appendChild(z);
   });
   $('outWrap').hidden=true;
-  const dt=C.idealP.DT.map(p=>face(p,'ok')).concat(showAlt?C.altP.DT.map(p=>face(p,'alt')):[]);
-  $('dtFaces').innerHTML=dt.length?dt.join(''):'<span style="color:var(--muted);font-size:.9rem">Todavía sin elegir</span>';
+  const dt=zoneFaces('DT',C.idealP.DT,C.altP.DT);
+  $('dtFaces').innerHTML=dt.any?dt.html:'<span style="color:var(--muted);font-size:.9rem">Todavía sin elegir</span>';
   const np=sorted().filter(p=>!p.ideal);
   $('noPos').innerHTML=np.length?np.map(p=>face(p,'')).join(''):'<span style="color:var(--muted);font-size:.9rem">Todos cargaron su posición.</span>';
 
