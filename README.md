@@ -1,4 +1,4 @@
-# La Martona One · Más 40
+# Martona United · Más 40
 
 App del plantel: cada jugador carga su posición ideal y dos alternativas, si está lesionado y cuántas semanas le faltan. La cancha muestra a todos en su posición ideal para ver dónde sobran o faltan jugadores, y la tabla lo resume por puesto.
 

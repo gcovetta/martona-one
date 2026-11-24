@@ -1,4 +1,4 @@
--- La Martona One · Más 40
+-- Martona United · Más 40
 -- Pegar completo en Supabase → SQL Editor → Run.
 
 create table if not exists public.jugadores (
