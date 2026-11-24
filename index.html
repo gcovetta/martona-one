@@ -285,14 +285,14 @@ const POS = {
 };
 const BACK4=[['ARQ',50,89],['DFI',12,64],['DFC',33,74,'DCI','DCI'],['DFC',67,74,'DCD','DCD'],['DFD',88,64]];
 const FORMS={
+  '4312':{n:'4-3-1-2 (con enganche)',s:[...BACK4,['MI',16,50],['MC',50,54],['MD',84,50],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
   '442':{n:'4-4-2',s:[...BACK4,['MI',13,43],['MC',35,50],['MC',65,50],['MD',87,43],['DLI',33,17],['DLD',67,17]]},
   '433':{n:'4-3-3',s:[...BACK4,['MI',22,47],['MC',50,52],['MD',78,47],['DLI',16,21],['DCN',50,15],['DLD',84,21]]},
   '4231':{n:'4-2-3-1',s:[...BACK4,['MC',30,56],['MC',70,56],['MI',14,33],['ENG',50,35],['MD',86,33],['DCN',50,13]]},
-  '4312':{n:'4-3-1-2 (con enganche)',s:[...BACK4,['MI',16,50],['MC',50,54],['MD',84,50],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
   '352':{n:'3-5-2',s:[['ARQ',50,89],['DFC',22,72,'DCI','DCI'],['DFC',50,75,'DC','DC'],['DFC',78,72,'DCD','DCD'],['MI',12,47],['MC',35,54],['MC',65,54],['MD',88,47],['ENG',50,35],['DLI',32,15],['DLD',68,15]]},
   '451':{n:'4-5-1',s:[...BACK4,['MI',12,42],['MC',31,50],['ENG',50,38],['MC',69,50],['MD',88,42],['DCN',50,14]]}
 };
-let FORM='442';try{const v=localStorage.getItem('martona40-form');if(v&&FORMS[v])FORM=v}catch(e){}
+let FORM='4312';try{const v=localStorage.getItem('martona40-form2');if(v&&FORMS[v])FORM=v}catch(e){}
 function applyForm(){Object.keys(POS).forEach(k=>{if(k!=='DT')POS[k].need=FORMS[FORM].s.filter(x=>x[0]===k).length})}
 applyForm();
 const LINES = [['ARQ','Arquero'],['DEF','Defensa'],['MED','Medio'],['ATA','Ataque']];
@@ -372,7 +372,7 @@ function showTab(t){
   render();
 }
 $('formSel').innerHTML=Object.entries(FORMS).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');$('formSel').value=FORM;
-$('formSel').onchange=e=>{FORM=e.target.value;try{localStorage.setItem('martona40-form',FORM)}catch(_){};applyForm();render()};
+$('formSel').onchange=e=>{FORM=e.target.value;try{localStorage.setItem('martona40-form2',FORM)}catch(_){};applyForm();render()};
 let showAlt=true;try{showAlt=localStorage.getItem(KEY+'-alt2')!=='0'}catch(e){}
 $('showAlt').checked=showAlt;
 $('showAlt').onchange=e=>{showAlt=e.target.checked;try{localStorage.setItem(KEY+'-alt2',showAlt?'1':'0')}catch(_){};render()};
