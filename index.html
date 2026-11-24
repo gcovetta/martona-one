@@ -224,7 +224,7 @@ td.names .a{color:var(--muted)}
   <section id="v-tabla" class="view" hidden>
     <div class="panel">
       <h2>Posiciones del plantel</h2>
-      <span style="color:var(--muted);font-size:.88rem">Los 11 puestos de la táctica <b id="tblForm"></b>. Cambiala en la pestaña Cancha. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
+      <span style="color:var(--muted);font-size:.88rem">Los puestos de la táctica <b id="tblForm"></b>; "Nec." es cuántos titulares pide cada uno. Cambiala en la pestaña Cancha. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
       <div class="tbl"><table id="table"></table></div>
     </div>
   </section>
@@ -275,7 +275,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_loe17kyI6t-6uwcUiLXB_w_3UKd98Q2';
 const POS = {
   ARQ:{ab:'ARQ',s:'Arquero',n:'Arquero',l:'ARQ'},
   DFI:{ab:'DI',s:'Def. izq.',n:'Defensor por izquierda',l:'DEF'},
-  DFC:{ab:'DC',s:'Def. cent.',n:'Defensor central',l:'DEF'},
+  DFC:{ab:'DFC',s:'Def. cent.',n:'Defensor central',l:'DEF'},
   DFD:{ab:'DD',s:'Def. der.',n:'Defensor por derecha',l:'DEF'},
   MI:{ab:'MI',s:'Med. izq.',n:'Mediocampista por izquierda',l:'MED'},
   MC:{ab:'MC',s:'Med. cent.',n:'Mediocampista central',l:'MED'},
@@ -459,15 +459,25 @@ function slotsOf(C){
   });
 }
 
+// junta los puestos repetidos (2 centrales, 2 volantes centrales) en uno solo
+function mergedSlots(C){
+  const SL=slotsOf(C),out=[];
+  SL.forEach(t=>{
+    const g=out.find(o=>o.k===t.k);
+    if(g){g.xs.push(t.x);g.ys.push(t.y);g.need++;}
+    else out.push({k:t.k,xs:[t.x],ys:[t.y],need:1,ab:POS[t.k].ab,label:POS[t.k].s,full:POS[t.k].n,ip:C.idealP[t.k],ap:C.altP[t.k]});
+  });
+  out.forEach(o=>{const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;o.x=o.need>1?50:o.xs[0];o.y=avg(o.ys);o.c=o.need>1;
+    if(o.need===1){const t=SL.find(t=>t.k===o.k);o.ab=t.ab;o.label=t.label;}});
+  return out;
+}
 const EXTRA_XY={DFI:[10,60],DFD:[90,60],DFC:[50,80],MI:[10,40],MD:[90,40],MC:[50,60],ENG:[50,33],DLI:[20,10],DLD:[80,10],DCN:[50,8]};
 const ALWAYS=['ENG','DCN'];
 /* ---------- cancha ---------- */
 function renderCancha(C){
   const pitch=$('pitch');pitch.querySelectorAll('.zone').forEach(n=>n.remove());
   // los defensores centrales se muestran en un solo lugar del mapa
-  const SL=slotsOf(C),dfc=SL.filter(t=>t.k==='DFC');
-  const mapSlots=dfc.length>1?[...SL.filter(t=>t.k!=='DFC'),{k:'DFC',x:50,y:Math.max(...dfc.map(t=>t.y)),ab:'DFC',label:'Def. central',ip:C.idealP.DFC,ap:C.altP.DFC,need:dfc.length,c:1}]:SL;
-  mapSlots.forEach(({k,x,y,ab:hab,label:hs,ip,ap:apAll,need=1,c})=>{
+  mergedSlots(C).forEach(({k,x,y,ab:hab,label:hs,ip,ap:apAll,need=1,c})=>{
     const v=POS[k],ap=showAlt?apAll:[];
     const avail=ip.filter(p=>!p.inj).length,aAvail=ap.filter(p=>!p.inj).length;
     const z=document.createElement('div');z.className='zone'+(c?' c':'');z.style.left=x+'%';z.style.top=y+'%';
@@ -516,13 +526,13 @@ function renderTabla(C){
   const names=(ip,ap)=>ip.map(lab).concat(ap.map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
   const av=a=>a.filter(p=>!p.inj).length;
   const num=(n,need)=>`<span class="st ${stat(n,need)[0]}">${n}</span>`;
-  const SL=slotsOf(C);
+  const SL=mergedSlots(C);
   let h='<thead><tr><th>Puesto</th><th class="n">Ideal</th><th class="n">Alt.</th><th class="n">Nec.</th></tr></thead><tbody>';
   LINES.forEach(([l,lbl])=>{
     const rows=SL.filter(t=>POS[t.k].l===l).sort((a,b)=>a.x-b.x||b.y-a.y);
-    const ti=rows.reduce((a,t)=>a+av(t.ip),0),ta=rows.reduce((a,t)=>a+av(t.ap),0),tn=rows.length;
+    const ti=rows.reduce((a,t)=>a+av(t.ip),0),ta=rows.reduce((a,t)=>a+av(t.ap),0),tn=rows.reduce((a,t)=>a+t.need,0);
     h+=`<tr class="grp"><td>${lbl} <span class="st ${stat(ti,tn)[0]}" style="margin-left:4px">${stat(ti,tn)[1]}</span></td><td class="n">${ti}</td><td class="n">${ta}</td><td class="n">${tn}</td></tr>`;
-    rows.forEach(t=>{h+=`<tr><td><div style="font-weight:600"><span class="code">${t.ab}</span>${t.full}</div><div class="names">${names(t.ip,t.ap)}</div></td><td class="n">${num(av(t.ip),1)}</td><td class="n">${av(t.ap)}</td><td class="n">1</td></tr>`});
+    rows.forEach(t=>{h+=`<tr><td><div style="font-weight:600"><span class="code">${t.ab}</span>${t.full}</div><div class="names">${names(t.ip,t.ap)}</div></td><td class="n">${num(av(t.ip),t.need)}</td><td class="n">${av(t.ap)}</td><td class="n">${t.need}</td></tr>`});
   });
   const outK=Object.keys(POS).filter(k=>k!=='DT'&&!POS[k].need&&(C.idealP[k].length||C.altP[k].length));
   if(outK.length){
