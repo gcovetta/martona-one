@@ -232,6 +232,7 @@ textarea{font:500 1rem var(--body);color:var(--ink);background:var(--surface2);b
 .face.dim{opacity:.18}
 .face.hit .av{outline:3px solid var(--gold);outline-offset:3px}
 mark{background:var(--gold);color:#231a00;border-radius:3px;padding:0 2px}
+.tip{position:fixed;z-index:60;pointer-events:none;background:var(--accent);color:var(--accent-ink);font:700 .85rem var(--body);padding:5px 10px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.45);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis}
 </style>
 
 <div class="wrap">
@@ -510,7 +511,7 @@ let Q='';
 const fold=x=>(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const qm=p=>!Q||fold(p.name+' '+(p.nick||'')).includes(Q);
 const mk=(html,p)=>Q&&qm(p)?`<mark>${html}</mark>`:html;
-const face=(p,f)=>`<button type="button" class="face ${f}${Q?(qm(p)?' hit':' dim'):''}" data-id="${p.id}" title="${esc(dn(p))}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
+const face=(p,f)=>`<button type="button" class="face ${f}${Q?(qm(p)?' hit':' dim'):''}" data-id="${p.id}" data-tip="${esc(dn(p))}${p.inj?' · '+esc(injTxt(p)):''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
 const sorted=()=>[...S.players].sort((a,b)=>a.name.localeCompare(b.name,'es'));
 function stat(n,need){if(!need)return n?['alt','No se usa']:['ok','—'];return n<need?['bad',`Faltan ${need-n}`]:(n>need+1?['alt',`Sobran ${n-need}`]:['ok','Cubierto'])}
 
@@ -843,7 +844,18 @@ function renderQ(){
 }
 $('q').addEventListener('input',e=>{Q=fold(e.target.value.trim());render()});
 $('q-x').onclick=()=>{$('q').value='';Q='';render();$('q').focus()};
-function render(){renderQ();renderTally();renderTemas();const C=counts();renderCancha(C);renderTabla(C);renderPlantel()}
+// cartel con el nombre al pasar el mouse (o al enfocar con teclado) sobre una cara
+const tipEl=document.createElement('div');tipEl.className='tip';tipEl.setAttribute('role','tooltip');tipEl.hidden=true;document.body.appendChild(tipEl);
+function showTip(el){const t=el.dataset.tip;if(!t)return;tipEl.textContent=t;tipEl.hidden=false;
+  const r=el.getBoundingClientRect(),w=tipEl.offsetWidth,h=tipEl.offsetHeight;
+  let x=r.left+r.width/2-w/2;x=Math.max(8,Math.min(x,innerWidth-w-8));
+  let y=r.top-h-8;if(y<8)y=r.bottom+8;
+  tipEl.style.left=x+'px';tipEl.style.top=y+'px';}
+function hideTip(){tipEl.hidden=true}
+document.addEventListener('mouseover',e=>{const f=e.target.closest('.face');if(f)showTip(f);else hideTip()});
+document.addEventListener('focusin',e=>{const f=e.target.closest('.face');if(f)showTip(f);else hideTip()});
+document.addEventListener('scroll',hideTip,true);
+function render(){hideTip();renderQ();renderTally();renderTemas();const C=counts();renderCancha(C);renderTabla(C);renderPlantel()}
 let t0='cancha';try{t0=sessionStorage.getItem(KEY+'-tab')||'cancha'}catch(e){}
 prev();tReset();showTab(t0);pull();pullT2();listen();
 </script>
