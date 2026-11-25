@@ -10,3 +10,7 @@ App del plantel: cada jugador carga su posición ideal y dos alternativas, si es
 Sin las claves de Supabase, la app funciona igual pero guarda solo en el navegador de cada uno.
 
 **Ojo:** no hay login. Cualquiera que tenga el link puede ver y editar el plantel.
+
+## App instalable y versiones
+- Es una app web instalable (PWA): en iPhone, Safari → Compartir → *Agregar a inicio*; en Android, Chrome → *Instalar app*.
+- **En cada publicación**, subí el número en `APP_VERSION` (index.html) y en `VERSION` (sw.js), los dos iguales. Así la app instalada muestra "Hay una versión nueva · Actualizar".
