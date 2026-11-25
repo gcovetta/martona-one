@@ -144,7 +144,8 @@ tr.grp td{background:var(--surface2);font:800 .95rem var(--display);text-transfo
 td.names .a{color:var(--muted)}
 .st{font:700 .72rem var(--display);text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:99px;white-space:nowrap}
 .st.ok{background:var(--ok);color:#06200d}.st.alt{background:var(--alt);color:#231a00}.st.bad{background:var(--bad);color:#fff}
-.tabs{grid-template-columns:repeat(3,1fr)!important}
+.tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.tabs button{font-size:.95rem;padding:10px 4px;letter-spacing:.03em}
 .kits{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kit{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
 .kit img{width:100%;border-radius:10px;display:block;background:#123220}
@@ -186,6 +187,25 @@ td.names .a{color:var(--muted)}
 .shw[aria-pressed="true"]{background:var(--surface2);color:var(--ink);border-color:var(--accent)}
 .shw[aria-pressed="true"] i{opacity:1}
 .zl i:not(.ok):not(.alt):not(.bad){background:rgba(255,255,255,.25);color:#fff}
+.tcount{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--gold);color:#231a00;font-size:.72rem;vertical-align:2px}
+.tcount:empty{display:none}
+textarea{font:500 1rem var(--body);color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:10px;width:100%;resize:vertical}
+.sub2{color:var(--muted);font-size:.9rem}
+.tasks{display:flex;flex-direction:column}
+.task{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.tchk{flex:none;width:28px;height:28px;border-radius:8px;border:2px solid var(--accent);background:transparent;display:grid;place-items:center;cursor:pointer;margin-top:2px;padding:0;color:var(--accent-ink)}
+.tchk[aria-checked="true"]{background:var(--ok);border-color:var(--ok)}
+.tbody{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.ttitle{font-weight:700;font-size:1rem;overflow-wrap:anywhere}
+.tdesc{font-size:.88rem;color:var(--muted);white-space:pre-line;overflow-wrap:anywhere}
+.tmeta{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);flex-wrap:wrap}
+.tmeta .av{width:22px;height:22px;font-size:.6rem;box-shadow:none}
+.tmeta .av .num,.tmeta .av .foot,.tmeta .av .inj,.tmeta .av .injw{display:none}
+.task.done .ttitle{text-decoration:line-through;color:var(--muted)}
+.tdone-h{width:100%;background:none;border:0;padding:0;color:inherit;cursor:pointer;text-align:left}
+.tdone-h h2::after{content:" ▸";font-style:normal}
+.tdone-h[aria-expanded="true"] h2::after{content:" ▾"}
 </style>
 
 <div class="wrap">
@@ -198,6 +218,7 @@ td.names .a{color:var(--muted)}
     <button role="tab" id="tab-cancha" aria-selected="true" data-tab="cancha">Cancha</button>
     <button role="tab" id="tab-tabla" aria-selected="false" data-tab="tabla">Tabla</button>
     <button role="tab" id="tab-plantel" aria-selected="false" data-tab="plantel">Plantel</button>
+    <button role="tab" id="tab-temas" aria-selected="false" data-tab="temas">Temas <span class="tcount" id="tcount"></span></button>
   </div>
   <div class="tally" id="tally" aria-live="polite"></div>
 
@@ -263,6 +284,35 @@ td.names .a{color:var(--muted)}
       <h2>Posiciones del plantel</h2>
       <span style="color:var(--muted);font-size:.88rem">Los puestos de la táctica <b id="tblForm"></b>; "Nec." es cuántos titulares pide cada uno. Cambiala en la pestaña Cancha. Los nombres en gris eligieron ese puesto como alternativa. Los lesionados no se cuentan.</span>
       <div class="tbl"><table id="table"></table></div>
+    </div>
+  </section>
+
+  <!-- TEMAS VARIOS -->
+  <section id="v-temas" class="view" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <form class="panel" id="tform" autocomplete="off">
+        <h2 id="tformTitle">Nuevo tema</h2>
+        <label for="t-title">Qué hay que hacer<input id="t-title" required maxlength="80" placeholder="Ej: Conseguir cancha para el sábado"></label>
+        <label for="t-desc">Descripción (opcional)<textarea id="t-desc" rows="3" maxlength="600" placeholder="Detalles, montos, contactos…"></textarea></label>
+        <div class="row2">
+          <label for="t-resp">Responsable<select id="t-resp"></select></label>
+          <label for="t-other" id="t-other-l" hidden>Nombre<input id="t-other" maxlength="40" placeholder="Ej: el delegado"></label>
+        </div>
+        <p class="err" id="t-err" hidden></p>
+        <div class="btns">
+          <button class="btn primary" type="submit" id="t-save">Agregar tema</button>
+          <button class="btn" type="button" id="t-cancel" hidden>Cancelar</button>
+          <button class="btn danger" type="button" id="t-del" hidden>Borrar</button>
+        </div>
+      </form>
+      <div class="panel">
+        <div class="toolbar"><h2>Pendientes</h2><span class="sub2" id="t-pend-n"></span></div>
+        <div class="tasks" id="t-pend"></div>
+      </div>
+      <div class="panel">
+        <button type="button" class="toolbar tdone-h" id="t-done-tg" aria-expanded="false"><h2>Terminados</h2><span class="sub2" id="t-done-n"></span></button>
+        <div class="tasks" id="t-done" hidden></div>
+      </div>
     </div>
   </section>
 
@@ -393,6 +443,7 @@ let pullT=null;
 function listen(){
   if(!sb)return;
   sb.channel('jugadores').on('postgres_changes',{event:'*',schema:'public',table:'jugadores'},()=>{clearTimeout(pullT);pullT=setTimeout(pull,400)}).subscribe();
+  let tt=null;sb.channel('tareas').on('postgres_changes',{event:'*',schema:'public',table:'tareas'},()=>{clearTimeout(tt);tt=setTimeout(pullT2,400)}).subscribe();
 }
 
 const $=id=>document.getElementById(id);
@@ -422,7 +473,7 @@ function stat(n,need){if(!need)return n?['alt','No se usa']:['ok','—'];return 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 function showTab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  ['cancha','tabla','plantel'].forEach(v=>$('v-'+v).hidden=v!==t);
+  ['cancha','tabla','plantel','temas'].forEach(v=>$('v-'+v).hidden=v!==t);
   try{sessionStorage.setItem(KEY+'-tab',t)}catch(e){}
   render();
 }
@@ -647,7 +698,73 @@ function renderTally(){
   const n=S.players.length,pos=S.players.filter(p=>p.ideal).length,inj=S.players.filter(p=>p.inj).length;
   $('tally').innerHTML=`<span><b>${n}</b> jugador${n===1?'':'es'} anotado${n===1?'':'s'}</span><span><b>${pos}</b> con posición cargada</span>${inj?`<span><b>${inj}</b> lesionado${inj>1?'s':''}</span>`:''}`;
 }
-function render(){renderTally();const C=counts();renderCancha(C);renderTabla(C);renderPlantel()}
+/* ---------- temas varios (tareas) ---------- */
+const TKEY=KEY+'-tareas';
+let T=[];try{T=JSON.parse(localStorage.getItem(TKEY)||'[]')}catch(e){T=[]}
+function saveT(){try{localStorage.setItem(TKEY,JSON.stringify(T))}catch(e){}}
+const tFrom=r=>({id:r.id,title:r.titulo,desc:r.descripcion||'',resp:r.responsable||'',done:!!r.hecha,created:Date.parse(r.creada)||0,doneAt:r.hecha_at?Date.parse(r.hecha_at):0});
+const tTo=t=>({id:t.id,titulo:t.title,descripcion:t.desc||null,responsable:t.resp||null,hecha:!!t.done,hecha_at:t.doneAt?new Date(t.doneAt).toISOString():null});
+let tErr='';
+async function pullT2(){
+  if(!sb)return;
+  const {data,error}=await sb.from('tareas').select('*').order('creada');
+  if(error){tErr='Falta crear la tabla de temas en Supabase. Mientras tanto se guardan solo en este teléfono.';renderTemas();return}
+  tErr='';T=data.map(tFrom);saveT();renderTemas();
+}
+async function pushT(t){saveT();if(!sb)return;const {error}=await sb.from('tareas').upsert(tTo(t));if(error){tErr='No se pudo guardar en línea: '+error.message;renderTemas()}}
+async function delT(id){saveT();if(!sb)return;await sb.from('tareas').delete().eq('id',id)}
+let tEditing=null,tDelArmed=false;
+function respLabel(v){if(!v)return'';if(v.startsWith('p:')){const p=byId(v.slice(2));return p?dn(p):'Jugador que ya no está'}return v.slice(2)}
+function fillResp(){
+  const cur=$('t-resp').value;
+  $('t-resp').innerHTML='<option value="">Sin asignar</option>'+sorted().map(p=>`<option value="p:${p.id}">${esc(dn(p))}</option>`).join('')+'<option value="o:">Otro (escribir nombre)…</option>';
+  $('t-resp').value=[...$('t-resp').options].some(o=>o.value===cur)?cur:'';
+}
+function syncOther(){$('t-other-l').hidden=$('t-resp').value!=='o:'}
+$('t-resp').onchange=syncOther;
+function tReset(){tEditing=null;tDelArmed=false;$('tform').reset();$('tformTitle').textContent='Nuevo tema';$('t-save').textContent='Agregar tema';
+  $('t-cancel').hidden=true;$('t-del').hidden=true;$('t-del').textContent='Borrar';$('t-err').hidden=true;fillResp();syncOther()}
+function tEdit(id){const t=T.find(x=>x.id===id);if(!t)return;tEditing=id;tDelArmed=false;fillResp();
+  $('t-title').value=t.title;$('t-desc').value=t.desc;
+  if(t.resp.startsWith('o:')){$('t-resp').value='o:';$('t-other').value=t.resp.slice(2)}else{$('t-resp').value=t.resp;$('t-other').value=''}
+  syncOther();$('tformTitle').textContent='Editar tema';$('t-save').textContent='Guardar cambios';$('t-cancel').hidden=false;$('t-del').hidden=false;$('t-del').textContent='Borrar';$('t-err').hidden=true;
+  $('tform').scrollIntoView({behavior:'smooth',block:'start'})}
+$('t-cancel').onclick=tReset;
+$('t-del').onclick=()=>{if(!tDelArmed){tDelArmed=true;$('t-del').textContent='Tocá de nuevo para borrar';return}
+  const id=tEditing;T=T.filter(x=>x.id!==id);delT(id);tReset();renderTemas()};
+$('tform').onsubmit=e=>{e.preventDefault();
+  const title=$('t-title').value.trim(),desc=$('t-desc').value.trim();let resp=$('t-resp').value;
+  if(!title){$('t-err').textContent='Escribí qué hay que hacer.';$('t-err').hidden=false;return}
+  if(resp==='o:'){const o=$('t-other').value.trim();resp=o?'o:'+o:''}
+  let t;if(tEditing){t=T.find(x=>x.id===tEditing);Object.assign(t,{title,desc,resp})}
+  else{t={id:'t'+Date.now().toString(36),title,desc,resp,done:false,created:Date.now(),doneAt:0};T.push(t)}
+  pushT(t);tReset();renderTemas()};
+function toggleT(id){const t=T.find(x=>x.id===id);if(!t)return;t.done=!t.done;t.doneAt=t.done?Date.now():0;pushT(t);renderTemas()}
+$('t-done-tg').onclick=()=>{const open=$('t-done').hidden;$('t-done').hidden=!open;$('t-done-tg').setAttribute('aria-expanded',open)};
+function taskRow(t){
+  const rp=t.resp.startsWith('p:')?byId(t.resp.slice(2)):null;
+  const who=t.resp?`${rp?avatar(rp,''):''}<span>${esc(respLabel(t.resp))}</span>`:'<span>Sin responsable</span>';
+  const when=t.done&&t.doneAt?` · terminado el ${new Date(t.doneAt).toLocaleDateString('es-AR',{day:'numeric',month:'short'})}`:'';
+  return `<div class="task${t.done?' done':''}">
+    <button type="button" class="tchk" role="checkbox" aria-checked="${t.done}" aria-label="${t.done?'Volver a pendiente':'Marcar como terminado'}: ${esc(t.title)}" data-tchk="${t.id}">${t.done?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>':''}</button>
+    <button type="button" class="tbody" data-tedit="${t.id}"><span class="ttitle">${esc(t.title)}</span>${t.desc?`<span class="tdesc">${esc(t.desc)}</span>`:''}<span class="tmeta">${who}${when}</span></button>
+  </div>`;
+}
+function renderTemas(){
+  const pend=T.filter(t=>!t.done).sort((a,b)=>a.created-b.created),done=T.filter(t=>t.done).sort((a,b)=>b.doneAt-a.doneAt);
+  $('tcount').textContent=pend.length||'';
+  $('t-pend-n').textContent=pend.length?`${pend.length} por hacer`:'';
+  $('t-pend').innerHTML=(tErr?`<p class="err" style="margin:0 0 8px">${esc(tErr)}</p>`:'')+(pend.length?pend.map(taskRow).join(''):'<p class="empty">No hay nada pendiente. Agregá un tema con el formulario de arriba.</p>');
+  $('t-done-n').textContent=done.length?`${done.length}`:'';
+  $('t-done').innerHTML=done.length?done.map(taskRow).join(''):'<p class="empty">Todavía no se terminó ningún tema.</p>';
+  if(!tEditing)fillResp();
+}
+document.addEventListener('click',e=>{
+  const c=e.target.closest('[data-tchk]');if(c){toggleT(c.dataset.tchk);return}
+  const b=e.target.closest('[data-tedit]');if(b)tEdit(b.dataset.tedit);
+});
+
+function render(){renderTally();renderTemas();const C=counts();renderCancha(C);renderTabla(C);renderPlantel()}
 let t0='cancha';try{t0=sessionStorage.getItem(KEY+'-tab')||'cancha'}catch(e){}
-prev();showTab(t0);pull();listen();
+prev();tReset();showTab(t0);pull();pullT2();listen();
 </script>
