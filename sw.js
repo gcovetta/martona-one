@@ -1,6 +1,6 @@
 // Service worker de Martona United.
 // Cambiá VERSION en cada publicación: así la app instalada avisa que hay una versión nueva.
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CACHE = 'martona-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 
