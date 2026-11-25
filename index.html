@@ -219,6 +219,19 @@ textarea{font:500 1rem var(--body);color:var(--ink);background:var(--surface2);b
 .rchip .av .num,.rchip .av .foot,.rchip .av .inj,.rchip .av .injw{display:none}
 .rchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .rwho{display:inline-flex;align-items:center;gap:5px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.search{position:relative;display:flex;align-items:center}
+.search .sico{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.search input{padding-left:38px;padding-right:44px;min-height:44px;border-radius:12px;-webkit-appearance:none;appearance:none}
+.search input::-webkit-search-cancel-button{display:none}
+.qx{position:absolute;right:4px;width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:1rem;cursor:pointer}
+.qres{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.qhit{display:flex;align-items:center;gap:6px;min-height:40px;padding:4px 10px 4px 4px;border-radius:99px;border:1px solid var(--gold);background:var(--surface);color:var(--ink);font:600 .9rem var(--body);cursor:pointer}
+.qhit .av{width:28px;height:28px;font-size:.66rem}
+.qhit .av .num,.qhit .av .foot,.qhit .av .inj,.qhit .av .injw{display:none}
+.face.dim{opacity:.18}
+.face.hit .av{outline:3px solid var(--gold);outline-offset:3px}
+mark{background:var(--gold);color:#231a00;border-radius:3px;padding:0 2px}
 </style>
 
 <div class="wrap">
@@ -235,6 +248,13 @@ textarea{font:500 1rem var(--body);color:var(--ink);background:var(--surface2);b
   </div>
   <div class="tally" id="tally" aria-live="polite"></div>
   <div class="bday" id="bday" hidden></div>
+  <div class="search">
+    <label for="q" class="sr">Buscar jugador</label>
+    <svg class="sico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Buscar por nombre, apellido o apodo" autocomplete="off" enterkeyhint="search">
+    <button type="button" id="q-x" class="qx" aria-label="Borrar búsqueda" hidden>✕</button>
+  </div>
+  <div class="qres" id="qres" hidden></div>
 
   <!-- CANCHA -->
   <section id="v-cancha" class="view">
@@ -485,7 +505,12 @@ function avatar(p,f){
 }
 const FOOT={D:'Derecha',I:'Izquierda',A:'Ambas'};
 const dn=p=>p.nick?`${p.name} “${p.nick}”`:p.name;
-const face=(p,f)=>`<button type="button" class="face ${f}" data-id="${p.id}" title="${esc(dn(p))}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
+// búsqueda por nombre, apellido o apodo (sin importar tildes ni mayúsculas)
+let Q='';
+const fold=x=>(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const qm=p=>!Q||fold(p.name+' '+(p.nick||'')).includes(Q);
+const mk=(html,p)=>Q&&qm(p)?`<mark>${html}</mark>`:html;
+const face=(p,f)=>`<button type="button" class="face ${f}${Q?(qm(p)?' hit':' dim'):''}" data-id="${p.id}" title="${esc(dn(p))}${p.inj?' ('+injTxt(p)+')':''}" aria-label="${esc(dn(p))}${p.inj?', '+injTxt(p):''}">${avatar(p,f)}</button>`;
 const sorted=()=>[...S.players].sort((a,b)=>a.name.localeCompare(b.name,'es'));
 function stat(n,need){if(!need)return n?['alt','No se usa']:['ok','—'];return n<need?['bad',`Faltan ${need-n}`]:(n>need+1?['alt',`Sobran ${n-need}`]:['ok','Cubierto'])}
 
@@ -681,7 +706,7 @@ function renderCancha(C){
 /* ---------- tabla ---------- */
 function renderTabla(C){
   $('tblForm').textContent=FORMS[FORM].n;
-  const lab=p=>esc(dn(p))+(p.foot?` <span class="fx">${p.foot==='A'?'ambas':p.foot==='I'?'zurdo':'diestro'}</span>`:'')+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
+  const lab=p=>mk(esc(dn(p)),p)+(p.foot?` <span class="fx">${p.foot==='A'?'ambas':p.foot==='I'?'zurdo':'diestro'}</span>`:'')+(p.inj?` <span style="color:#ff8a80;font-weight:700">(${injTxt(p)})</span>`:'');
   const names=(ip,ap)=>ip.map(lab).concat(ap.map(p=>`<span class="a">${lab(p)}</span>`)).join(', ')||'<span class="a">Nadie</span>';
   const av=a=>a.filter(p=>!p.inj).length;
   const num=(n,need)=>`<span class="st ${stat(n,need)[0]}">${n}</span>`;
@@ -710,13 +735,14 @@ function renderTabla(C){
 function renderPlantel(){
   const loaded=S.players.filter(p=>p.ideal).length;
   $('pend').textContent=loaded<S.players.length?'Tocá un nombre para cargar su posición':'';
-  $('list').innerHTML=sorted().length?sorted().map(p=>`<button type="button" class="pl" data-id="${p.id}">${avatar(p,p.ideal?'ok':'')}
+  const shown=sorted().filter(qm);
+  $('list').innerHTML=shown.length?shown.map(p=>`<button type="button" class="pl" data-id="${p.id}">${avatar(p,p.ideal?'ok':'')}
     <span class="info"><span class="nm">${esc(p.name)}${p.nick?`<span class="nick">“${esc(p.nick)}”</span>`:''}${p.ideal?'':'<span class="tag">falta posición</span>'}${p.inj?`<span class="tag inj-t">${injTxt(p)}</span>`:''}</span>
     <span class="ps">${p.foot?`Pierna ${FOOT[p.foot].toLowerCase()} · `:""}${p.ideal?`<b>${POS[p.ideal].n}</b>${p.alt1?' · '+POS[p.alt1].n:''}${p.alt2?' · '+POS[p.alt2].n:''}`:(p.alt1||p.alt2?'Sin ideal · '+[p.alt1,p.alt2].filter(Boolean).map(c=>POS[c].n).join(' · '):'Sin cargar')}</span></span></button>`).join('')
-    :'<p class="empty">Todavía no hay jugadores. Sumá el primero con el formulario.</p>';
+    :(Q?'<p class="empty">Nadie coincide con la búsqueda.</p>':'<p class="empty">Todavía no hay jugadores. Sumá el primero con el formulario.</p>');
 }
 
-document.addEventListener('click',e=>{const b=e.target.closest('.face,.pl');if(b&&b.dataset.id)openSheet(b.dataset.id)});
+document.addEventListener('click',e=>{const b=e.target.closest('.face,.pl,.qhit');if(b&&b.dataset.id)openSheet(b.dataset.id)});
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 $('f-bd').innerHTML='<option value="">—</option>'+Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
 $('f-bm').innerHTML='<option value="">—</option>'+MESES.map((m,i)=>`<option value="${i+1}">${m[0].toUpperCase()+m.slice(1)}</option>`).join('');
@@ -795,7 +821,8 @@ function taskRow(t){
   </div>`;
 }
 function renderTemas(){
-  const pend=T.filter(t=>!t.done).sort((a,b)=>a.created-b.created),done=T.filter(t=>t.done).sort((a,b)=>b.doneAt-a.doneAt);
+  const tq=t=>!Q||fold(t.title+' '+t.desc+' '+t.resp.map(respLabel).join(' ')).includes(Q);
+  const pend=T.filter(t=>!t.done&&tq(t)).sort((a,b)=>a.created-b.created),done=T.filter(t=>t.done&&tq(t)).sort((a,b)=>b.doneAt-a.doneAt);
   $('tcount').textContent=pend.length||'';
   $('t-pend-n').textContent=pend.length?`${pend.length} por hacer`:'';
   $('t-pend').innerHTML=(tErr?`<p class="err" style="margin:0 0 8px">${esc(tErr)}</p>`:'')+(pend.length?pend.map(taskRow).join(''):'<p class="empty">No hay nada pendiente. Agregá un tema con el formulario de arriba.</p>');
@@ -807,7 +834,16 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-tedit]');if(b)tEdit(b.dataset.tedit);
 });
 
-function render(){renderTally();renderTemas();const C=counts();renderCancha(C);renderTabla(C);renderPlantel()}
+function renderQ(){
+  $('q-x').hidden=!Q;
+  if(!Q){$('qres').hidden=true;return}
+  const hits=sorted().filter(qm);
+  $('qres').hidden=false;
+  $('qres').innerHTML=hits.length?`<span class="sub2">${hits.length} coincidencia${hits.length>1?'s':''}:</span>`+hits.map(p=>`<button type="button" class="qhit" data-id="${p.id}">${avatar(p,p.ideal?'ok':'')}<span>${esc(dn(p))}</span></button>`).join(''):'<span class="sub2">Nadie coincide con la búsqueda.</span>';
+}
+$('q').addEventListener('input',e=>{Q=fold(e.target.value.trim());render()});
+$('q-x').onclick=()=>{$('q').value='';Q='';render();$('q').focus()};
+function render(){renderQ();renderTally();renderTemas();const C=counts();renderCancha(C);renderTabla(C);renderPlantel()}
 let t0='cancha';try{t0=sessionStorage.getItem(KEY+'-tab')||'cancha'}catch(e){}
 prev();tReset();showTab(t0);pull();pullT2();listen();
 </script>
